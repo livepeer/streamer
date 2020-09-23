@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  monitor:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - STREAM_MONITOR_LABEL_REGION=#{REGION}
+    entrypoint:
+      - ./bin/stream-monitor
+    command:
+      - -wait-for-target
+      - 120s
+      - -rtmp-url
+      - ${INJEST_URL}
+      - -media-url
+      - ${PLAYBACK_URL}
+      - -time
+      - ${DURATION}
+      - -ignore-time-drift
+      - -ignore-gaps
+      - -v
+      - "1"
+    ports:
+      - 9091:9090
+
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=12341234
+      - GF_USERS_ALLOW_SIGN_UP=false
+    image: grafana/grafana:7.1.5
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+
+  prom:
+    image: prom/prometheus:v2.20.1
+    volumes:
+      - ./data/prometheus/config:/etc/prometheus/
+      - ./data/prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - 9090:9090

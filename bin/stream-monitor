@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'bundler/setup'
+
+# setup load path
+lib = File.expand_path(File.join(__dir__, "..", "lib"))
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'prometheus_exporter'
+require 'prometheus_exporter/server'
+
+require 'stream_monitor/handlers/metrics'
+require 'stream_monitor/handlers/relay'
+require 'stream_monitor/handlers/local_logger'
+require 'stream_monitor/session'
+
+# setup prometheus
+PrometheusExporter::Metric::Base.default_prefix = ENV.fetch("STREAM_MONITOR_DEFAULT_PREFIX", "stream_monitor_")
+PrometheusExporter::Metric::Base.default_labels = {
+  region: ENV.fetch("STREAM_MONITOR_LABEL_REGION", "n/a")
+}
+
+server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
+server.start
+
+# setup flush frequency
+$stdout.sync = true
+
+# setup session
+handlers = [
+  StreamMonitor::Metrics.new(server),
+  StreamMonitor::Relay.new($stdout),
+  StreamMonitor::LocalLogger.new($stdout),
+]
+command = "/opt/streamtester"
+base_args = %w[-file /opt/asset.mp4]
+
+puts ARGV
+# stream loop
+while true do
+  @session = StreamMonitor::Session.new(
+    command: command,
+    args: base_args + ARGV,
+    handlers: handlers,
+  )
+  @session.start
+end

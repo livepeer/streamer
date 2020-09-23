@@ -1,0 +1,12 @@
+global:
+  external_labels:
+      monitor: 'stream-monitor'
+
+rule_files:
+  # - no rules for now
+
+scrape_configs:
+  - job_name: 'stream-monitor'
+    scrape_interval: 12s
+    static_configs:
+      - targets: ['localhost:9090', 'monitor:9090']
