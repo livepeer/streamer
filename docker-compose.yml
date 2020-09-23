@@ -6,7 +6,7 @@ services:
     volumes:
       - .:/app
     environment:
-      - STREAM_MONITOR_LABEL_REGION=#{REGION}
+      - STREAM_MONITOR_LABEL_REGION=${REGION}
     entrypoint:
       - ./bin/stream-monitor
     command:
