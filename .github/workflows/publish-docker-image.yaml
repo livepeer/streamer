@@ -19,7 +19,7 @@ jobs:
       run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
 
     - name: Build docker image
-      run: docker build . --file Dockerfile --tag livepeer/stream-monitor:${{ steps.get_version.outputs.VERSION }}
+      run: docker build . --file Dockerfile --tag livepeerci/stream-monitor:${{ steps.get_version.outputs.VERSION }}
 
     - name: Push docker image
       env:
@@ -27,4 +27,4 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       run: |
         echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u $DOCKER_USERNAME --password-stdin
-        docker push livepeer/stream-monitor:${{ steps.get_version.outputs.VERSION }}
+        docker push livepeerci/stream-monitor:${{ steps.get_version.outputs.VERSION }}
