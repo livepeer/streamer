@@ -17,7 +17,8 @@ require 'stream_monitor/session'
 # setup prometheus
 PrometheusExporter::Metric::Base.default_prefix = ENV.fetch("STREAM_MONITOR_DEFAULT_PREFIX", "stream_monitor_")
 PrometheusExporter::Metric::Base.default_labels = {
-  region: ENV.fetch("STREAM_MONITOR_LABEL_REGION", "n/a")
+  region: ENV.fetch("STREAM_MONITOR_LABEL_REGION", "n/a"),
+  duration: ENV.fetch("STREAM_MONITOR_LABEL_DURATION", "n/a"),
 }
 
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
@@ -35,7 +36,6 @@ handlers = [
 command = "/opt/streamtester"
 base_args = %w[-file /opt/asset.mp4]
 
-puts ARGV
 # stream loop
 while true do
   @session = StreamMonitor::Session.new(
