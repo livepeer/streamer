@@ -1,0 +1,8 @@
+apiVersion: v2
+name: stream-monitor
+description: |
+  Tests streams e2e through livepeer and surfaces metrics to
+  prometheus
+type: application
+version: 0.1.0
+appVersion: 1.0.0

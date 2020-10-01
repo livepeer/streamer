@@ -1,0 +1,54 @@
+# Default values for stream-monitor.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+global:
+  promKubeScrap: "scrape"
+
+# The test streams to run in this release. Configuration can be provided as an array
+# with the following item schema
+#
+# - name: "the human name for this test stream"
+#   duration: "the duration of each stream session before restarting. 2m"
+#   injest_region: "the tag for region being exercised, useful for filtering metrics"
+#   playback_region: "the tag for region being exercised, useful for filtering metrics"
+#   injest_url: "the full rtmp injest url"
+#   playback_url: "the full playback url"
+streams: []

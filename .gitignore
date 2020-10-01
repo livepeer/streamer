@@ -1,3 +1,4 @@
 data/prometheus/data
 data/grafana
 .env
+tmp

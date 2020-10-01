@@ -1,0 +1,76 @@
+{{- $root := . -}}
+{{- range .Values.streams }}
+{{- $stream := . -}}
+{{- $data := (dict "root" $root "stream" $stream)  -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "stream-monitor.streamName" $data }}
+  labels:
+    {{- include "stream-monitor.labels" $ | nindent 4 }}
+    {{- include "stream-monitor.selectorLabels" $data | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "stream-monitor.selectorLabels" $data | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "stream-monitor.selectorLabels" $data | nindent 8 }}
+      annotations:
+        prometheus.io/{{ $.Values.global.promKubeScrape | default "scrape" }}: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $.Chart.Name }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+          command:
+            - /app/bin/stream-monitor
+          args:
+            - -rtmp-url
+            - {{ $stream.injest_url }}
+            - -media-url
+            - {{ $stream.playback_url }}
+            - -time
+            - {{ $stream.duration }}
+            - -ignore-time-drift
+            - -ignore-gaps
+            - -v
+            - "1"
+            - -wait-for-target
+            - 120s
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- end }}

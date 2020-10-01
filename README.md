@@ -53,3 +53,25 @@ The source of truth is looking at https://localhost:9091/metrics
 Output is buffered so when tailing the logs with docker you will notice the
 output rate is not realtime. We could accelerate the output rate by using PTY
 to call stream-tester but this doesn't seem necessary at the moment.
+
+## Deployment
+
+Included is a helm chart for deployment to a kubernetes cluster. The chart
+creates a deployment for each configured "stream" in the given values file.
+
+The setup for a stream looks like this:
+
+```yaml
+# example values.yaml
+streams:
+  - name: "the human name for this test stream"
+    duration: "the duration of each stream session before restarting. Ex: 2m"
+    injest_region: "the tag for region being exercised, useful for filtering metrics"
+    playback_region: "the tag for region being exercised, useful for filtering metrics"
+    injest_url: "the full rtmp injest url"
+    playback_url: "the full playback url"
+```
+
+We rely on prometheus pod scrapers to collect metrics from our test streams. Each pod
+will be labeled with test.livepeer.io/{important-attribute} for filtering in our
+grafana dashboards.
