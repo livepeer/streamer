@@ -26,5 +26,5 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       run: |
-        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u $DOCKER_USERNAME --password-stdin
         docker push livepeer/stream-monitor:${{ steps.get_version.outputs.VERSION }}
