@@ -1,0 +1,30 @@
+name: publish-docker-image
+
+on:
+  push:
+    tags:
+      - *
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
+    - name: Build docker image
+      run: docker build . --file Dockerfile --tag livepeer/stream-monitor:${{ steps.get_version.outputs.VERSION }}
+
+    - name: Push docker image
+      env:
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      run: |
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
+        docker push livepeer/stream-monitor:${{ steps.get_version.outputs.VERSION }}
