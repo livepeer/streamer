@@ -5,9 +5,9 @@ services:
     build: .
     volumes:
       - .:/app
-    environment:
-      - STREAM_MONITOR_LABEL_REGION=${REGION}
-      - STREAM_MONITOR_LABEL_DURATION=${DURATION}
+    # environment:
+      # - STREAM_MONITOR_LABEL_REGION=${REGION}
+      # - STREAM_MONITOR_LABEL_DURATION=${DURATION}
     entrypoint:
       - ./bin/stream-monitor
     command:

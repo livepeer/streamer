@@ -16,10 +16,9 @@ require 'stream_monitor/session'
 
 # setup prometheus
 PrometheusExporter::Metric::Base.default_prefix = ENV.fetch("STREAM_MONITOR_DEFAULT_PREFIX", "stream_monitor_")
-PrometheusExporter::Metric::Base.default_labels = {
-  region: ENV.fetch("STREAM_MONITOR_LABEL_REGION", "n/a"),
-  duration: ENV.fetch("STREAM_MONITOR_LABEL_DURATION", "n/a"),
-}
+PrometheusExporter::Metric::Base.default_labels = {}
+PrometheusExporter::Metric::Base.default_labels[:region] = ENV["STREAM_MONITOR_LABEL_REGION"] if ENV.key? "STREAM_MONITOR_LABEL_REGION"
+PrometheusExporter::Metric::Base.default_labels[:duration] = ENV["STREAM_MONITOR_LABEL_DURATION"] if ENV.key? "STREAM_MONITOR_LABEL_DURATION"
 
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
 server.start

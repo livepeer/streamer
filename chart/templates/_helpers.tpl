@@ -26,7 +26,7 @@ If release name contains chart name it will be used as a full name.
 */}}
 {{- define "stream-monitor.streamName" -}}
 {{- if contains .root.Chart.Name .root.Release.Name }}
-{{- printf "%s-%s" .root.Release.Name .stream.name $| trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .root.Release.Name .stream.name | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- printf "%s-%s-%s" .root.Release.Name .root.Chart.Name .stream.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
