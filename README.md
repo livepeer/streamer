@@ -1,7 +1,7 @@
-# stream-monitor
+# Livepeer "Streamer"
 
 A tool to exercise Livepeer e2e by continuously running test streams,
-monitoring their output, and surfacing the resulting metrics to prometheus.
+monitoring their output.
 
 ## Running
 
