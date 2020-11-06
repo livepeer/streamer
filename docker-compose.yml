@@ -1,6 +1,41 @@
 version: '3.8'
 
 services:
+  streamer:
+    build: .
+    environment:
+      - LIVEPEER_API_KEY=${LIVEPEER_API_KEY}
+      - LIVEPEER_API_HOST=${LIVEPEER_API_HOST}
+      - HLS_ANALYZER_API_KEY=${HLS_ANALYZER_API_KEY}
+      - HLS_ANALYZER_API_HOST=${HLS_ANALYZER_API_HOST}
+      - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
+      - PLAYBACK_REGION=mdw
+      - INGEST_REGION=mdw
+    volumes:
+      - .:/app
+
+  ffmpeg:
+    build: .
+    entrypoint:
+      - ffmpeg
+    command:
+      - -re
+      - -fflags
+      - +genpts
+      - -stream_loop
+      - "-1"
+      - -i
+      - /opt/bbb_30s.ts
+      - -c
+      - copy
+      - -strict
+      - "-2"
+      - -bsf:a
+      - aac_adtstoasc
+      - -f
+      - flv
+      - rtmp://mdw-rtmp.livepeer.monster/live/74e2-qimo-7aaf-r7kn
+
   monitor:
     build: .
     volumes:
