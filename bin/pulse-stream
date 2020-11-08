@@ -109,7 +109,7 @@ while true
       else
         logger.error "FFMPEG exited non-zero. Notifying watchers"
         discord.send(
-          content: "FFMPEG exited non-zero when broadcasting to #{ingest} @thedeeno"
+          content: "FFMPEG exited non-zero when broadcasting to #{ingest} <@thedeeno>"
         )
       end
     end

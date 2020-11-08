@@ -112,7 +112,10 @@ begin
       elsif @status.exitstatus == 255
         logger.info "FFMPEG terminated by signal successfully"
       else
-        logger.info "FFMPEG exited non-zero"
+        logger.info "FFMPEG exited non-zero. Notifying watchers"
+        discord.send(
+          content: "FFMPEG exited non-zero when broadcasting to #{ingest} <@thedeeno>"
+        )
       end
     end
 
