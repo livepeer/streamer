@@ -27,7 +27,7 @@ server.start
 # Setup APIs
 while true
   begin
-    duration = 180
+    duration = ENV.fetch("BROADCAST_DURATION").to_i
     playback_region = ENV.fetch("PLAYBACK_REGION")
     ingest_region = ENV.fetch("INGEST_REGION")
     livepeer = Streamer::Livepeer.new(
@@ -107,10 +107,10 @@ while true
       elsif @status.exitstatus == 255
         logger.info "FFMPEG terminated by signal successfully"
       else
+        logger.error "FFMPEG exited non-zero. Notifying watchers"
         discord.send(
           content: "FFMPEG exited non-zero when broadcasting to #{ingest} @thedeeno"
         )
-        logger.info "FFMPEG exited non-zero"
       end
     end
 

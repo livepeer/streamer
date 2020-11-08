@@ -25,8 +25,8 @@ server.start
 #   which causes the process to exit with 255 code
 
 # Setup APIs
-grace = 45
-duration = 120
+grace = ENV.fetch("MONITOR_DELAY").to_i
+duration = ENV.fetch("BROADCAST_DURATION").to_i
 playback_region = ENV.fetch("PLAYBACK_REGION")
 ingest_region = ENV.fetch("INGEST_REGION")
 analyzer = Streamer::HlsAnalyzer.new(
