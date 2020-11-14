@@ -10,18 +10,18 @@ module Streamer
       c = cycle
 
       c.before(:start_broadcast) do
-        # start_message = <<~MSG
-        #   -----
-        #   Starting #{cycle.duration}s broadcast to #{cycle.ingest}
-        # MSG
-        #
-        # discord.send(
-        #   content: start_message,
-        #   embeds: [{
-        #     title: "View on Bitmovin",
-        #     url: cycle.bitmovin_url
-        #   }]
-        # )
+        start_message = <<~MSG
+          -----
+          Starting #{cycle.duration}s broadcast to #{cycle.ingest}
+        MSG
+
+        discord.send(
+          content: start_message,
+          embeds: [{
+            title: "View on Bitmovin",
+            url: cycle.bitmovin_url
+          }]
+        )
       end
 
       c.after(:playlist_too_small) do
