@@ -98,4 +98,8 @@ begin
 rescue Interrupt
   current_cycle.interrupt!
   exit
+rescue StandardError => e
+  logger.error(e.full_message)
+  current_cycle.shutdown!
+  exit
 end
