@@ -32,6 +32,7 @@ pagerduty = Streamer::PagerDuty.new(
   integration_key: ENV.fetch("PAGER_DUTY_API_KEY"),
   component: ENV.fetch("PAGER_DUTY_COMPONENT"),
 )
+page_after_n_failures = ENV.fetch("PAGE_AFTER_N_FAILURES", 3)
 
 logger = Logger.new($stdout)
 session_name = SecureRandom.uuid
@@ -65,7 +66,7 @@ begin
   page_on_multiple_non_zero = Streamer::PageMulipleNonZero.new(
     pagerduty: pagerduty,
     logger: logger,
-    max_failures: 3,
+    max_failures: page_after_n_failures,
   )
 
   while true
@@ -80,7 +81,6 @@ begin
       broadcaster_factory: Streamer::BroadcasterFactory.new,
       decorators: [
         Streamer::LoggerDecorator.new(logger),
-        Streamer::DiscordDecorator.new(discord),
         Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
         page_on_multiple_non_zero,
       ]
