@@ -24,6 +24,7 @@ require 'streamer/decorators/logger_decorator'
 require 'streamer/decorators/discord_decorator'
 require 'streamer/decorators/summarizer'
 require 'streamer/decorators/page_on_unexpected_playlist'
+require 'streamer/decorators/monitor_source'
 
 # Setup APIs
 grace = ENV.fetch("MONITOR_DELAY").to_i
@@ -42,8 +43,8 @@ discord = Streamer::Discord.new(
   webhook: ENV.fetch("DISCORD_WEBHOOK")
 )
 pagerduty = Streamer::PagerDuty.new(
-  integration_key: ENV["PAGER_DUTY_API_KEY"],
-  component: "unit tests",
+  integration_key: ENV.fetch("PAGER_DUTY_API_KEY"),
+  component: ENV.fetch("PAGER_DUTY_COMPONENT"),
 )
 
 logger = Logger.new($stdout)
@@ -81,7 +82,6 @@ begin
       duration: duration,
       playback_region: playback_region,
       ingest_region: ingest_region,
-      analyzer: analyzer,
       livepeer: livepeer,
       session_name: session_name,
       profiles: profiles,
@@ -90,16 +90,16 @@ begin
         Streamer::LoggerDecorator.new(logger),
         Streamer::DiscordDecorator.new(discord),
         Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
-        Streamer::Summarizer.new(discord: discord, logger: logger),
+        Streamer::MonitorSource.new(analyzer: analyzer, logger: logger, discord: discord),
       ]
     )
     current_cycle.execute
   end
 rescue Interrupt
-  current_cycle.interrupt!
+  current_cycle&.interrupt!
   exit
 rescue StandardError => e
   logger.error(e.full_message)
-  current_cycle.shutdown!
+  current_cycle&.shutdown!
   exit
 end

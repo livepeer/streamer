@@ -54,14 +54,6 @@ module Streamer
         info "FFMPEG exited non-zero. Notifying watchers"
       end
 
-      c.before(:start_monitoring_source) do
-        info("Adding monitor at #{c.analyzer.host}")
-      end
-
-      c.after(:start_monitoring_source) do
-        info("Added monitor at #{c.analyzer.host}")
-      end
-
       c.before(:shutdown) do
         info("Shutting down")
       end

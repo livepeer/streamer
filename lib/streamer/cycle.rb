@@ -21,7 +21,6 @@ module Streamer
     attr_reader :duration
     attr_reader :playback_region
     attr_reader :ingest_region
-    attr_reader :analyzer
     attr_reader :livepeer
     attr_reader :session_name
     attr_reader :profiles
@@ -48,7 +47,6 @@ module Streamer
       playback_region:,
       ingest_region:,
       profiles:,
-      analyzer:,
       livepeer:,
       broadcaster_factory:,
       session_name: "",
@@ -95,7 +93,6 @@ module Streamer
             tick = Concurrent::Channel.ticker(tick_interval)
             broadcast_done = Concurrent::Channel.timer(duration)
 
-            fire(:start_monitoring_source) { start_monitoring_source! }
             fire(:start_monitoring_playlist) { start_monitoring_playlist! }
           end
           s.take(broadcast_done) do
@@ -175,7 +172,9 @@ module Streamer
         x.start(exit_channel)
       end
 
-      add_cleanup_step(:stop_broadcast) { broadcaster.kill }
+      add_cleanup_step(:stop_broadcast) do
+        broadcaster.kill
+      end
     end
 
     def tick!
@@ -199,20 +198,6 @@ module Streamer
     def interrupt!
       fire(:interrupt)
       shutdown!
-    end
-
-    def start_monitoring_source!
-      analyzer.add(stream.source)
-
-      after(:broadcast_done) do
-        fire(:summarize_montior) do
-          stream_status = analyzer.status(stream.source)
-        end
-      end
-
-      add_cleanup_step(:stop_monitoring_source) do
-        analyzer.remove(stream.source)
-      end
     end
 
     def start_monitoring_playlist!
