@@ -66,8 +66,12 @@ module Streamer
         info("Shutting down")
       end
 
+      c.before(:check_playlist) do
+        info("Checking playlist size is #{c.expected_playlist_size}")
+      end
+
       c.after(:check_playlist) do
-        info("Expecting playlist size of #{c.expected_playlist_size}. Got #{c.current_playlist_size}.")
+        info("Expected playlist size of #{c.expected_playlist_size}. Got #{c.current_playlist_size}.")
       end
 
       c.after(:broadcast_success) do
