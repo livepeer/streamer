@@ -25,7 +25,7 @@ module Streamer
     end
 
     def kill
-      Process.kill("TERM", @pid)
+      Process.kill("KILL", @pid)
     rescue Errno::ESRCH
       # swallow
     end
