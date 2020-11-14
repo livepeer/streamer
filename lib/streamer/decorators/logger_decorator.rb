@@ -55,7 +55,7 @@ module Streamer
       end
 
       c.before(:shutdown) do
-        info("Shutting down")
+        info("Shutdown")
       end
 
       c.before(:check_playlist) do

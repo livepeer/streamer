@@ -62,7 +62,13 @@ profiles = [
 
 current_cycle = nil
 
+class TermSignal < StandardError; end
+
 begin
+  trap :TERM do
+    raise TermSignal
+  end
+
   page_on_multiple_non_zero = Streamer::PageMulipleNonZero.new(
     pagerduty: pagerduty,
     logger: logger,
@@ -87,6 +93,11 @@ begin
     )
     current_cycle.execute
   end
+
+rescue TermSignal
+  logger.info "Trapped TERM Signal. Terminating..."
+  current_cycle&.shutdown!
+  exit
 rescue Interrupt
   current_cycle&.interrupt!
   exit

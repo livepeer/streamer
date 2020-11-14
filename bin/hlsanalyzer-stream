@@ -65,7 +65,13 @@ profiles = [
 
 current_cycle = nil
 
+class TermSignal < StandardError; end
+
 begin
+  trap :TERM do
+    raise TermSignal
+  end
+
   while true
     current_cycle = Streamer::Cycle.new(
       grace: boot_delay,
@@ -85,6 +91,11 @@ begin
     )
     current_cycle.execute
   end
+
+rescue TermSignal
+  logger.info "Trapped TERM Signal. Terminating..."
+  current_cycle&.shutdown!
+  exit
 rescue Interrupt
   current_cycle&.interrupt!
   exit
