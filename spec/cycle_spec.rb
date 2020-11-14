@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-require 'streamer/full_cycle'
+require 'streamer/cycle'
 require 'stringio'
 require 'logger'
 require 'streamer/decorators/discord_decorator'

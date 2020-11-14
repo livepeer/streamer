@@ -14,7 +14,7 @@ require 'prometheus_exporter/server'
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
 server.start
 
-require 'streamer/full_cycle'
+require 'streamer/cycle'
 require 'streamer/services/analyzer'
 require 'streamer/services/livepeer'
 require 'streamer/services/discord'
@@ -69,7 +69,7 @@ current_cycle = nil
 
 begin
   while true
-    current_cycle = Streamer::FullCycle.new(
+    current_cycle = Streamer::Cycle.new(
       grace: grace,
       duration: duration,
       playback_region: playback_region,
