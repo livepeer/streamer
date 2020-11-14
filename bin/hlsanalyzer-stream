@@ -18,10 +18,12 @@ require 'streamer/cycle'
 require 'streamer/services/analyzer'
 require 'streamer/services/livepeer'
 require 'streamer/services/discord'
+require 'streamer/services/pager_duty'
 require 'streamer/broadcaster_factory'
 require 'streamer/decorators/logger_decorator'
 require 'streamer/decorators/discord_decorator'
 require 'streamer/decorators/summarizer'
+require 'streamer/decorators/page_on_unexpected_playlist'
 
 # Setup APIs
 grace = ENV.fetch("MONITOR_DELAY").to_i
@@ -39,6 +41,11 @@ livepeer = Streamer::Livepeer.new(
 discord = Streamer::Discord.new(
   webhook: ENV.fetch("DISCORD_WEBHOOK")
 )
+pagerduty = Streamer::PagerDuty.new(
+  integration_key: ENV["PAGER_DUTY_API_KEY"],
+  component: "unit tests",
+)
+
 logger = Logger.new($stdout)
 session_name = SecureRandom.uuid
 profiles = [
@@ -82,6 +89,7 @@ begin
       decorators: [
         Streamer::LoggerDecorator.new(logger),
         Streamer::DiscordDecorator.new(discord),
+        Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
         Streamer::Summarizer.new(discord: discord, logger: logger),
       ]
     )

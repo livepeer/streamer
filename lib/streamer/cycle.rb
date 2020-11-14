@@ -78,7 +78,7 @@ module Streamer
       broadcast_exited = Concurrent::Channel.new(capacity: 1)
 
       fire(:init) { create_stream! }
-      fire(:start_broadcast) { start_broadcast(stream.rtmp_ingest_url, broadcast_exited) }
+      fire(:start_broadcast) { start_broadcast(ingest, broadcast_exited) }
 
       booted = Concurrent::Channel.timer(grace)
       shutdown = Concurrent::Channel.new(capacity: 1)
@@ -125,6 +125,10 @@ module Streamer
         fire(:playlist_too_small)
         shutdown!
       end
+    end
+
+    def decorate_with(decorator)
+      decorator.decorate(self)
     end
 
     def add_tick_action(name, &block)
@@ -215,7 +219,8 @@ module Streamer
       @expected_playlist_size = profiles.size + 1
 
       add_tick_action(:check_playlist) do
-        @current_playlist_size = stream.fetch_playlist_size
+        stream.fetch_playlist!
+        @current_playlist_size = stream.current_playlist_size
         if current_playlist_size != expected_playlist_size
           raise UnexpectedPlaylistSize.new
         end

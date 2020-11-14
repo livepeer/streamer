@@ -23,6 +23,10 @@ WORKDIR /app
 
 # install dependencies
 ADD ./Gemfile* /app/
+# packages required for the json gem, which is required by the pagerduty gem
+RUN apt-get update && apt-get install -y \
+  gcc \
+  make
 RUN bundle install
 
 # add source code

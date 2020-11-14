@@ -9,6 +9,7 @@ module Streamer
     attr_accessor :user_id
     attr_accessor :ingest_region
     attr_accessor :playback_region
+    attr_accessor :current_playlist
 
     def initialize(hash)
       @name = hash["name"]
@@ -35,12 +36,14 @@ module Streamer
       "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/0_1/index.m3u8"
     end
 
-    def fetch_playlist_size
-      fetch_playlist.scan(/#EXT-X-STREAM-INF/).length
+    def current_playlist_size
+      current_playlist&.scan(/#EXT-X-STREAM-INF/)&.length
     end
 
-    def fetch_playlist
-      Faraday.get(playback_url).body
+    def fetch_playlist!
+      @current_playlist = Faraday.get(playback_url).body
+    end
+
     def bitmovin_url
       URI::HTTPS.build(
         host: "bitmovin.com",

@@ -18,9 +18,12 @@ GEM
       ruby2_keywords
     i18n (1.8.5)
       concurrent-ruby (~> 1.0)
+    json (2.3.1)
     method_source (1.0.0)
     minitest (5.14.2)
     multipart-post (2.1.1)
+    pagerduty (3.0.0)
+      json (>= 1.7.7)
     prometheus_exporter (0.5.3)
     pry (0.13.1)
       coderay (~> 1.1)
@@ -54,6 +57,7 @@ DEPENDENCIES
   concurrent-ruby
   concurrent-ruby-edge
   faraday
+  pagerduty
   prometheus_exporter
   pry
   rspec
