@@ -11,6 +11,8 @@ services:
       - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
       - PLAYBACK_REGION=mdw
       - INGEST_REGION=mdw
+      - MONITOR_DELAY=30
+      - BROADCAST_DURATION=120
     volumes:
       - .:/app
 

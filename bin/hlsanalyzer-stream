@@ -6,30 +6,28 @@ require 'bundler/setup'
 lib = File.expand_path(File.join(__dir__, "..", "lib"))
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-require 'streamer/stream'
-require 'streamer/livepeer'
-require 'streamer/hls_analyzer'
-require 'streamer/discord'
 require 'securerandom'
 require 'logger'
-require 'open3'
 
 require 'prometheus_exporter'
 require 'prometheus_exporter/server'
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
 server.start
 
-# Imporant conditions to be exercised:
-# - FFMPEG exits earily
-# - FFMPEG reaches cycle duration. We have to send a TERM signal to the FFMPEG process
-#   which causes the process to exit with 255 code
+require 'streamer/full_cycle'
+require 'streamer/services/analyzer'
+require 'streamer/services/livepeer'
+require 'streamer/services/discord'
+require 'streamer/broadcaster_factory'
+require 'streamer/decorators/logger_decorator'
+require 'streamer/decorators/discord_decorator'
 
 # Setup APIs
 grace = ENV.fetch("MONITOR_DELAY").to_i
 duration = ENV.fetch("BROADCAST_DURATION").to_i
 playback_region = ENV.fetch("PLAYBACK_REGION")
 ingest_region = ENV.fetch("INGEST_REGION")
-analyzer = Streamer::HlsAnalyzer.new(
+analyzer = Streamer::Analyzer.new(
   api_key: ENV.fetch("HLS_ANALYZER_API_KEY"),
   host: ENV.fetch("HLS_ANALYZER_API_HOST"),
 )
@@ -41,182 +39,79 @@ discord = Streamer::Discord.new(
   webhook: ENV.fetch("DISCORD_WEBHOOK")
 )
 logger = Logger.new($stdout)
-stream_name = SecureRandom.uuid
+session_name = SecureRandom.uuid
+profiles = [
+  {
+    "name": "720p",
+    "bitrate": 2000000,
+    "fps": 30,
+    "width": 1280,
+    "height": 720
+  },
+  {
+    "name": "480p",
+    "bitrate": 1000000,
+    "fps": 30,
+    "width": 854,
+    "height": 480
+  },
+  {
+    "name": "360p",
+    "bitrate": 500000,
+    "fps": 30,
+    "width": 640,
+    "height": 360
+  }
+]
+
+current_cycle = nil
 
 begin
   while true
-    logger.info("Creating stream at #{livepeer.base_url}")
-    @stream = livepeer.create_stream(
-      name: stream_name,
-      profiles: [
-         {
-          "name": "720p",
-          "bitrate": 2000000,
-          "fps": 30,
-          "width": 1280,
-          "height": 720
-        },
-        {
-          "name": "480p",
-          "bitrate": 1000000,
-          "fps": 30,
-          "width": 854,
-          "height": 480
-        },
-        {
-          "name": "360p",
-          "bitrate": 500000,
-          "fps": 30,
-          "width": 640,
-          "height": 360
-        }
+    current_cycle = Streamer::FullCycle.new(
+      grace: grace,
+      duration: duration,
+      playback_region: playback_region,
+      ingest_region: ingest_region,
+      analyzer: analyzer,
+      livepeer: livepeer,
+      session_name: session_name,
+      profiles: profiles,
+      broadcaster_factory: Streamer::BroadcasterFactory.new,
+      decorators: [
+        Streamer::LoggerDecorator.new(logger),
+        Streamer::DiscordDecorator.new(discord),
       ]
     )
-    @m3u8 = @stream.playback_url(playback_region)
-    logger.info("Created stream. id='#{@stream.id}' key='#{@stream.stream_key}' playback='#{@m3u8}'")
-
-    # start broadcast
-    command = "ffmpeg"
-    ingest = @stream.rtmp_ingest_url(ingest_region)
-    logger.info("Starting #{duration}s broadcast to #{ingest}")
-    args = [
-      "-hide_banner",
-      "-re",
-      "-fflags",
-      "+genpts",
-      "-stream_loop",
-      "-1",
-      "-i",
-      "/opt/bbb_30s.ts",
-      "-c",
-      "copy",
-      "-strict",
-      "-2",
-      "-bsf:a",
-      "aac_adtstoasc",
-      "-loglevel",
-      "repeat+level+warning",
-      "-f",
-      "flv",
-      ingest,
-    ]
-
-    logger.info("Executing #{command} #{args.join(" ")}")
-    @ffmpeg_pid = nil
-
-    t_ffmpeg = Thread.new do
-      @ffmpeg_pid = Process.spawn(command, *args)
-      _, @status = Process.wait2(@ffmpeg_pid)
-      if @status.exitstatus == 0
-        logger.info "FFMPEG completed successfully"
-      elsif @status.exitstatus == 255
-        logger.info "FFMPEG terminated by signal successfully"
-      else
-        logger.info "FFMPEG exited non-zero. Notifying watchers"
-        discord.send(
-          content: "FFMPEG exited non-zero when broadcasting to #{ingest} <@thedeeno>"
-        )
-      end
-    end
-
-    t_timer = Thread.new do
-      # poll the process every second for the full cycle, exit when no longer there
-      duration.times do
-        break if !t_ffmpeg.alive?
-        sleep 1
-      end
-
-      # # process is still running, shut it down
-      Process.kill("TERM", @ffmpeg_pid) if t_ffmpeg.alive?
-    end
-
-    bitmovin_url = URI::HTTPS.build(
-      host: "bitmovin.com",
-      path: "/demos/stream-test",
-      query: URI.encode_www_form(
-        format: "hls",
-        manifest: @m3u8,
-      )
-    ).to_s
-
-    start_message = <<~MSG
-      -----
-      Starting #{duration}s broadcast to #{ingest}
-    MSG
-    discord.send(
-      content: start_message,
-      embeds: [{
-        title: "View on Bitmovin",
-        url: bitmovin_url
-      }]
-    )
-
-    logger.info("Waiting #{grace}s before adding hlsanalyzer monitor")
-    sleep grace
-    discord.send(
-      content: "Started Monitoring #{@m3u8}"
-    )
-
-    begin 
-      # is ffmpeg still running?
-      Process.wait(@ffmpeg_pid, Process::WNOHANG).nil?
-
-      logger.info("Adding monitor at #{analyzer.host}")
-      analyzer.add(@m3u8)
-      logger.info("Added monitor at #{analyzer.host}")
-
-      t_ffmpeg.join
-      t_timer.join
-
-      # summarize
-      logger.info("Cycle complete. Fetching monitor Summary before shutdown.")
-      stream_status = analyzer.status(@m3u8)
-      logger.info("Summary Fetched")
-      discord_status = Marshal.load(Marshal.dump(stream_status))
-      discord_status["status"]&.delete("Variants")
-      message = <<~MSG
-        Broadcast complete.
-          ingest: "#{ingest}"
-          playback: "#{@m3u8}"
-          summary:
-        ```
-        #{JSON.pretty_generate(stream_status)}
-        ```
-      MSG
-      discord_message = <<~MSG
-        Broadcast complete. Analysis for `"#{@m3u8}"`
-        ```
-        #{JSON.pretty_generate(discord_status)}
-        ```
-      MSG
-      logger.info(message)
-      discord.send(
-        content: discord_message
-      )
-
-      logger.info("Removing monitor at #{analyzer.host}")
-      analyzer.remove(@m3u8)
-      @m3u8 = nil
-      logger.info("Removed monitor at #{analyzer.host}")
-    rescue Errno::ECHILD
-      t_ffmpeg.join
-      t_timer.join
-    end
-
-    logger.info("Deleting stream #{@stream.id}")
-    livepeer.delete_stream(@stream.id)
-    logger.info("Deleted stream #{@stream.id}")
+    current_cycle.execute
   end
 rescue Interrupt
-  if @m3u8
-    logger.info("Removing monitor at #{analyzer.host}")
-    analyzer.remove(@m3u8)
-    logger.info("Removed monitor at #{analyzer.host}")
-  end
-
-  if @stream
-    logger.info("Deleting stream #{@stream.id}")
-    livepeer.delete_stream(@stream.id)
-    logger.info("Deleted stream #{@stream.id}")
-  end
+  current_cycle.interrupt!
+  exit
 end
+
+      # logger.info("Cycle complete. Fetching monitor Summary before shutdown.")
+      # stream_status = analyzer.status(@m3u8)
+      # logger.info("Summary Fetched")
+      # discord_status = Marshal.load(Marshal.dump(stream_status))
+      # discord_status["status"]&.delete("Variants")
+      # message = <<~MSG
+      #   Broadcast complete.
+      #     ingest: "#{ingest}"
+      #     playback: "#{@m3u8}"
+      #     summary:
+      #   ```
+      #   #{JSON.pretty_generate(stream_status)}
+      #   ```
+      # MSG
+      # discord_message = <<~MSG
+      #   Broadcast complete. Analysis for `"#{@m3u8}"`
+      #   ```
+      #   #{JSON.pretty_generate(discord_status)}
+      #   ```
+      # MSG
+      # logger.info(message)
+      # discord.send(
+      #   content: discord_message
+      # )
+      #

@@ -1,5 +1,7 @@
+require 'faraday'
+
 module Streamer
-  class HlsAnalyzer
+  class Analyzer
     attr_reader :conn
     attr_reader :host
     attr_reader :api_key
@@ -24,7 +26,7 @@ module Streamer
 
     def add(m3u8)
       response = conn.get("/api/add") do |req|
-        req.params["m3u8"] = source_stream_for(m3u8)
+        req.params["m3u8"] = m3u8
         req.params["apikey"] = api_key
       end
 
@@ -33,7 +35,7 @@ module Streamer
 
     def remove(m3u8)
       response = conn.get("/api/remove") do |req|
-        req.params["m3u8"] = source_stream_for(m3u8)
+        req.params["m3u8"] = m3u8
         req.params["apikey"] = api_key
       end
       JSON.parse(response.body)
@@ -41,14 +43,10 @@ module Streamer
 
     def status(m3u8)
       response = conn.get("/api/status") do |req|
-        req.params["m3u8"] = source_stream_for(m3u8)
+        req.params["m3u8"] = m3u8
         req.params["apikey"] = api_key
       end
       JSON.parse(response.body)
-    end
-
-    def source_stream_for(url)
-      url.gsub('/index.m3u8', '/0_1/index.m3u8')
     end
 
   end

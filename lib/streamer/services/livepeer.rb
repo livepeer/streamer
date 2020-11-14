@@ -1,4 +1,4 @@
-require_relative 'stream'
+require 'streamer/stream'
 require 'faraday'
 require 'json'
 
@@ -16,7 +16,12 @@ module Streamer
       "https://#{host}"
     end
 
-    def create_stream(name:, profiles: nil)
+    def create_stream(
+      name:,
+      profiles: nil,
+      playback_region: "mdw",
+      ingest_region: "mdw"
+    )
       body = {
         name: name
       }
@@ -26,6 +31,8 @@ module Streamer
 
       json = JSON.parse(response.body)
       json["platform"] = @host
+      json["ingest_region"] = ingest_region
+      json["playback_region"] = playback_region
 
       Stream.new(json)
     end

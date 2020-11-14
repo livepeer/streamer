@@ -67,12 +67,12 @@ while true
         }
       ]
     )
-    m3u8 = @stream.playback_url(playback_region)
+    m3u8 = @stream.playback_url
     logger.info("Created stream. id='#{@stream.id}' key='#{@stream.stream_key}' playback='#{m3u8}'")
 
     # start broadcast
     command = "ffmpeg"
-    ingest = @stream.rtmp_ingest_url(ingest_region)
+    ingest = @stream.rtmp_ingest_url
     logger.info("Starting #{duration}s broadcast to #{ingest}")
     args = [
       "-hide_banner",
