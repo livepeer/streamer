@@ -27,7 +27,7 @@ require 'streamer/decorators/page_on_unexpected_playlist'
 require 'streamer/decorators/monitor_source'
 
 # Setup APIs
-grace = ENV.fetch("MONITOR_DELAY").to_i
+boot_delay = ENV.fetch("BOOT_DELAY").to_i
 duration = ENV.fetch("BROADCAST_DURATION").to_i
 playback_region = ENV.fetch("PLAYBACK_REGION")
 ingest_region = ENV.fetch("INGEST_REGION")
@@ -78,7 +78,7 @@ current_cycle = nil
 begin
   while true
     current_cycle = Streamer::Cycle.new(
-      grace: grace,
+      grace: boot_delay,
       duration: duration,
       playback_region: playback_region,
       ingest_region: ingest_region,

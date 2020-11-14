@@ -12,7 +12,7 @@ services:
       - PAGER_DUTY_API_KEY=${PAGER_DUTY_API_KEY}
       - PLAYBACK_REGION=mdw
       - INGEST_REGION=mdw
-      - MONITOR_DELAY=30
+      - BOOT_DELAY=30
       - BROADCAST_DURATION=120
     volumes:
       - .:/app
