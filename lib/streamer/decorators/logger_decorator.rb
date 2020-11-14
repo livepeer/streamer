@@ -74,7 +74,7 @@ module Streamer
         info("Broadcast terminated")
       end
 
-      c.after(:broadcast_failed) do
+      c.before(:broadcast_failed) do
         info("Broadcast failed")
       end
 
