@@ -11,15 +11,6 @@ module Streamer
 
       c.before(:start_broadcast) do
 
-        bitmovin_url = URI::HTTPS.build(
-          host: "bitmovin.com",
-          path: "/demos/stream-test",
-          query: URI.encode_www_form(
-            format: "hls",
-            manifest: @m3u8,
-          )
-        ).to_s
-
         start_message = <<~MSG
           -----
           Starting #{cycle.duration}s broadcast to #{cycle.ingest}
@@ -29,7 +20,7 @@ module Streamer
           content: start_message,
           embeds: [{
             title: "View on Bitmovin",
-            url: bitmovin_url
+            url: cycle.bitmovin_url
           }]
         )
       end

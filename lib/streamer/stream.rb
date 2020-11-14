@@ -41,6 +41,15 @@ module Streamer
 
     def fetch_playlist
       Faraday.get(playback_url).body
+    def bitmovin_url
+      URI::HTTPS.build(
+        host: "bitmovin.com",
+        path: "/demos/stream-test",
+        query: URI.encode_www_form(
+          format: "hls",
+          manifest: playback,
+        )
+      ).to_s
     end
   end
 end

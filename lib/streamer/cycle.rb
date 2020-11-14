@@ -36,6 +36,12 @@ module Streamer
     attr_reader :current_playlist_size
     attr_reader :expected_playlist_size
 
+    delegate :bitmovin_url,
+      :current_playlist,
+      :source,
+      :playback,
+      to: :stream
+
     def initialize(
       grace:,
       duration:,
