@@ -21,6 +21,7 @@ require 'streamer/services/discord'
 require 'streamer/broadcaster_factory'
 require 'streamer/decorators/logger_decorator'
 require 'streamer/decorators/discord_decorator'
+require 'streamer/decorators/summarizer'
 
 # Setup APIs
 grace = ENV.fetch("MONITOR_DELAY").to_i
@@ -81,6 +82,7 @@ begin
       decorators: [
         Streamer::LoggerDecorator.new(logger),
         Streamer::DiscordDecorator.new(discord),
+        Streamer::Summarizer.new(discord: discord, logger: logger),
       ]
     )
     current_cycle.execute
@@ -89,29 +91,3 @@ rescue Interrupt
   current_cycle.interrupt!
   exit
 end
-
-      # logger.info("Cycle complete. Fetching monitor Summary before shutdown.")
-      # stream_status = analyzer.status(@m3u8)
-      # logger.info("Summary Fetched")
-      # discord_status = Marshal.load(Marshal.dump(stream_status))
-      # discord_status["status"]&.delete("Variants")
-      # message = <<~MSG
-      #   Broadcast complete.
-      #     ingest: "#{ingest}"
-      #     playback: "#{@m3u8}"
-      #     summary:
-      #   ```
-      #   #{JSON.pretty_generate(stream_status)}
-      #   ```
-      # MSG
-      # discord_message = <<~MSG
-      #   Broadcast complete. Analysis for `"#{@m3u8}"`
-      #   ```
-      #   #{JSON.pretty_generate(discord_status)}
-      #   ```
-      # MSG
-      # logger.info(message)
-      # discord.send(
-      #   content: discord_message
-      # )
-      #
