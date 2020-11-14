@@ -83,7 +83,7 @@ module Streamer
       done = Concurrent::Channel.new(capacity: 1)
 
       tick = Concurrent::Channel.new(capacity: 1)
-      broadcast_done = Concurrent::Channel.new(capacity: 1)
+      duration_reached = Concurrent::Channel.new(capacity: 1)
 
       loop do
         Concurrent::Channel.select do |s|
@@ -91,7 +91,7 @@ module Streamer
             fire(:booted)
 
             tick = Concurrent::Channel.ticker(tick_interval)
-            duration_reached = Concurrent::Channel.timer(duration_reached)
+            duration_reached = Concurrent::Channel.timer(duration)
 
             fire(:start_monitoring_playlist) { start_monitoring_playlist! }
           end

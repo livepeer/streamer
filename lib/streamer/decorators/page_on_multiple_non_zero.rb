@@ -1,25 +1,32 @@
 module Streamer
-  class PageOnUnexpectedPlaylist
+  class PageMulipleNonZero
     attr_reader :pagerduty
     attr_reader :logger
     attr_reader :failures
+    attr_reader :max_failures
 
-    def initialize(pagerduty: pagerduty, logger: logger, max_failures: 3)
+    def initialize(pagerduty:, logger:, max_failures: 3)
       @pagerduty = pagerduty
       @logger = logger
+      @max_failures = max_failures
       @failures = 0
+      @paged = false
+    end
+
+    def paged?
+      @paged
     end
 
     def decorate(cycle)
       cycle.after(:broadcast_failed) do
         @failures += 1
-        logger.info("Broadcast has failed #{failures} times in a row")
+        logger.info("Broadcast has failed #{failures} times in a row. Will page after #{max_failures} times.")
 
-        if failures > max_failures
-          logger.info("Max failures exceeded. Paging")
+        if failures > max_failures and !paged?
+          logger.info("Max failures exceeded, paging")
 
           pagerduty.trigger(
-            summary: "Broadcast Failed more than #{max_failures} in a row (#{component})",
+            summary: "Broadcast Failed more than #{max_failures} times in a row (#{pagerduty.component})",
             source: cycle.ingest,
             severity: "error",
             timestamp: Time.now,
@@ -39,12 +46,18 @@ module Streamer
               playlist: cycle.current_playlist,
             }
           )
+          @paged = true
         end
       end
 
       cycle.after(:broadcast_success) do
-        @failures = 0
+        reset
       end
+    end
+
+    def reset
+      @failures = 0
+      @paged = false
     end
 
   end
