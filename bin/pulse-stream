@@ -6,151 +6,98 @@ require 'bundler/setup'
 lib = File.expand_path(File.join(__dir__, "..", "lib"))
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-require 'streamer/stream'
-require 'streamer/livepeer'
-require 'streamer/hls_analyzer'
-require 'streamer/discord'
 require 'securerandom'
 require 'logger'
-require 'open3'
 
 require 'prometheus_exporter'
 require 'prometheus_exporter/server'
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
 server.start
 
-# Imporant conditions to be exercised:
-# - FFMPEG exits earily
-# - FFMPEG reaches cycle duration. We have to send a TERM signal to the FFMPEG process
-#   which causes the process to exit with 255 code
+require 'streamer/cycle'
+require 'streamer/services/analyzer'
+require 'streamer/services/livepeer'
+require 'streamer/services/discord'
+require 'streamer/services/pager_duty'
+require 'streamer/broadcaster_factory'
+require 'streamer/decorators/logger_decorator'
+require 'streamer/decorators/discord_decorator'
+require 'streamer/decorators/summarizer'
+require 'streamer/decorators/page_on_unexpected_playlist'
+require 'streamer/decorators/monitor_source'
 
 # Setup APIs
-while true
-  begin
-    duration = ENV.fetch("BROADCAST_DURATION").to_i
-    playback_region = ENV.fetch("PLAYBACK_REGION")
-    ingest_region = ENV.fetch("INGEST_REGION")
-    livepeer = Streamer::Livepeer.new(
-      api_key: ENV.fetch("LIVEPEER_API_KEY"),
-      host: ENV.fetch("LIVEPEER_API_HOST"),
-    )
-    discord = Streamer::Discord.new(
-      webhook: ENV.fetch("DISCORD_WEBHOOK")
-    )
-    logger = Logger.new($stdout)
-    stream_name = SecureRandom.uuid
+boot_delay = ENV.fetch("BOOT_DELAY").to_i
+duration = ENV.fetch("BROADCAST_DURATION").to_i
+playback_region = ENV.fetch("PLAYBACK_REGION")
+ingest_region = ENV.fetch("INGEST_REGION")
+livepeer = Streamer::Livepeer.new(
+  api_key: ENV.fetch("LIVEPEER_API_KEY"),
+  host: ENV.fetch("LIVEPEER_API_HOST"),
+)
+discord = Streamer::Discord.new(
+  webhook: ENV.fetch("DISCORD_WEBHOOK")
+)
+pagerduty = Streamer::PagerDuty.new(
+  integration_key: ENV.fetch("PAGER_DUTY_API_KEY"),
+  component: ENV.fetch("PAGER_DUTY_COMPONENT"),
+)
 
-    logger.info("Creating stream at #{livepeer.base_url}")
-    @stream = livepeer.create_stream(
-      name: stream_name,
-      profiles: [
-         {
-          "name": "720p",
-          "bitrate": 2000000,
-          "fps": 30,
-          "width": 1280,
-          "height": 720
-        },
-        {
-          "name": "480p",
-          "bitrate": 1000000,
-          "fps": 30,
-          "width": 854,
-          "height": 480
-        },
-        {
-          "name": "360p",
-          "bitrate": 500000,
-          "fps": 30,
-          "width": 640,
-          "height": 360
-        }
+logger = Logger.new($stdout)
+session_name = SecureRandom.uuid
+profiles = [
+  {
+    "name": "720p",
+    "bitrate": 2000000,
+    "fps": 30,
+    "width": 1280,
+    "height": 720
+  },
+  {
+    "name": "480p",
+    "bitrate": 1000000,
+    "fps": 30,
+    "width": 854,
+    "height": 480
+  },
+  {
+    "name": "360p",
+    "bitrate": 500000,
+    "fps": 30,
+    "width": 640,
+    "height": 360
+  }
+]
+
+current_cycle = nil
+
+begin
+  page_on_multiple_non_zero = Streamer::PageMulipleNonZero.new(pagerduty)
+
+  while true
+    current_cycle = Streamer::Cycle.new(
+      grace: boot_delay,
+      duration: duration,
+      playback_region: playback_region,
+      ingest_region: ingest_region,
+      livepeer: livepeer,
+      session_name: session_name,
+      profiles: profiles,
+      broadcaster_factory: Streamer::BroadcasterFactory.new,
+      decorators: [
+        Streamer::LoggerDecorator.new(logger),
+        Streamer::DiscordDecorator.new(discord),
+        Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
+        page_on_multiple_non_zero,
       ]
     )
-    m3u8 = @stream.playback_url
-    logger.info("Created stream. id='#{@stream.id}' key='#{@stream.stream_key}' playback='#{m3u8}'")
-
-    # start broadcast
-    command = "ffmpeg"
-    ingest = @stream.rtmp_ingest_url
-    logger.info("Starting #{duration}s broadcast to #{ingest}")
-    args = [
-      "-hide_banner",
-      "-re",
-      "-fflags",
-      "+genpts",
-      "-stream_loop",
-      "-1",
-      "-i",
-      "/opt/bbb_30s.ts",
-      "-c",
-      "copy",
-      "-strict",
-      "-2",
-      "-bsf:a",
-      "aac_adtstoasc",
-      "-loglevel",
-      "repeat+level+warning",
-      "-f",
-      "flv",
-      ingest,
-    ]
-
-    logger.info("Executing #{command} #{args.join(" ")}")
-    @ffmpeg_pid = nil
-
-    t_ffmpeg = Thread.new do
-      @ffmpeg_pid = Process.spawn(command, *args)
-      _, @status = Process.wait2(@ffmpeg_pid)
-      if @status.exitstatus == 0
-        logger.info "FFMPEG completed successfully"
-      elsif @status.exitstatus == 255
-        logger.info "FFMPEG terminated by signal successfully"
-      else
-        logger.error "FFMPEG exited non-zero. Notifying watchers"
-        discord.send(
-          content: "FFMPEG exited non-zero when broadcasting to #{ingest} <@thedeeno>"
-        )
-      end
-    end
-
-    t_timer = Thread.new do
-      # poll the process every second for the full cycle, exit when no longer there
-      duration.times do
-        break if !t_ffmpeg.alive?
-        sleep 1
-      end
-
-      # # process is still running, shut it down
-      Process.kill("TERM", @ffmpeg_pid) if t_ffmpeg.alive?
-    end
-
-    begin 
-      # is ffmpeg still running?
-      Process.wait(@ffmpeg_pid, Process::WNOHANG).nil?
-    rescue Errno::ECHILD
-      logger.error("Process not running")
-    ensure
-      t_ffmpeg.join
-      t_timer.join
-    end
-
-    logger.info("Deleting stream #{@stream.id}")
-    livepeer.delete_stream(@stream.id)
-    logger.info("Deleted stream #{@stream.id}")
-
-  rescue Interrupt
-    if @stream
-      logger.info("Deleting stream #{@stream.id}")
-      livepeer.delete_stream(@stream.id)
-      logger.info("Deleted stream #{@stream.id}")
-    end
-    exit
-  rescue TypeError
-    if @stream
-      logger.info("Deleting stream #{@stream.id}")
-      livepeer.delete_stream(@stream.id)
-      logger.info("Deleted stream #{@stream.id}")
-    end
+    current_cycle.execute
   end
+rescue Interrupt
+  current_cycle&.interrupt!
+  exit
+rescue StandardError => e
+  logger.error(e.full_message)
+  current_cycle&.shutdown!
+  exit
 end

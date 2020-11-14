@@ -91,11 +91,13 @@ module Streamer
             fire(:booted)
 
             tick = Concurrent::Channel.ticker(tick_interval)
-            broadcast_done = Concurrent::Channel.timer(duration)
+            duration_reached = Concurrent::Channel.timer(duration_reached)
 
             fire(:start_monitoring_playlist) { start_monitoring_playlist! }
           end
-          s.take(broadcast_done) do
+          s.take(duration_reached) do
+            fire(:broadcast_success)
+            fire(:broadcast_done)
             shutdown << true
           end
           s.take(broadcast_exited) do |msg|
@@ -120,6 +122,7 @@ module Streamer
         end
       rescue UnexpectedPlaylistSize => e
         fire(:playlist_too_small)
+        fire(:broadcast_failed)
         shutdown!
       end
     end

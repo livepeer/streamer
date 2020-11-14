@@ -14,6 +14,8 @@ module Streamer
       )
     end
 
+    delegate :trigger, to: :client
+
     def trigger_unexpected_playlist(cycle)
       @client.trigger(
         summary: "Unexpected Playlist Detected (#{component})",
