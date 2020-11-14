@@ -19,8 +19,8 @@ module Streamer
     def create_stream(
       name:,
       profiles: nil,
-      playback_region: "mdw",
-      ingest_region: "mdw"
+      playback_region:,
+      ingest_region:
     )
       body = {
         name: name

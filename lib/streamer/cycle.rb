@@ -157,6 +157,8 @@ module Streamer
         @stream = livepeer.create_stream(
           name: SecureRandom.uuid,
           profiles: profiles,
+          playback_region: playback_region,
+          ingest_region: ingest_region,
         )
         @ingest = stream.rtmp_ingest_url
       end
