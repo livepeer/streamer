@@ -14,17 +14,7 @@ require 'prometheus_exporter/server'
 server = PrometheusExporter::Server::WebServer.new bind: '0.0.0.0', port: 9090
 server.start
 
-require 'streamer/cycle'
-require 'streamer/services/analyzer'
-require 'streamer/services/livepeer'
-require 'streamer/services/discord'
-require 'streamer/services/pager_duty'
-require 'streamer/broadcaster_factory'
-require 'streamer/decorators/logger_decorator'
-require 'streamer/decorators/discord_decorator'
-require 'streamer/decorators/summarizer'
-require 'streamer/decorators/page_on_unexpected_playlist'
-require 'streamer/decorators/monitor_source'
+require 'streamer'
 
 # Setup APIs
 boot_delay = ENV.fetch("BOOT_DELAY").to_i
