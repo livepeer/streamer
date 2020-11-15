@@ -85,8 +85,13 @@ begin
       decorators: [
         Streamer::LoggerDecorator.new(logger),
         Streamer::DiscordDecorator.new(discord),
-        Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
-        Streamer::MonitorSource.new(analyzer: analyzer, logger: logger, discord: discord),
+        Streamer::MonitorPlaylist.new(logger: logger),
+        Streamer::MonitorSource.new(
+          analyzer: analyzer,
+          logger: logger,
+          discord: discord,
+        ),
+        Streamer::PageOnUnexpectedPlaylist.new(pagerduty, max_failures: 3),
       ]
     )
     current_cycle.execute

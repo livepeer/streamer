@@ -16,9 +16,9 @@ module Streamer
 
     delegate :trigger, to: :client
 
-    def trigger_unexpected_playlist(cycle)
-      @client.trigger(
-        summary: "Unexpected Playlist Detected (#{component})",
+    def trigger_unexpected_playlist(cycle, failures)
+      @client.incident("#{cycle.session_name}-unexpected-playlist").trigger(
+        summary: "Unexpected Playlist Detected #{failures}x (#{component} #{cycle.ingest_region}/#{cycle.playback_region})",
         source: cycle.ingest,
         severity: "error",
         timestamp: Time.now,

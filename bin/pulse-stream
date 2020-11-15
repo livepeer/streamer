@@ -87,7 +87,8 @@ begin
       broadcaster_factory: Streamer::BroadcasterFactory.new,
       decorators: [
         Streamer::LoggerDecorator.new(logger),
-        Streamer::PageOnUnexpectedPlaylist.new(pagerduty),
+        Streamer::MonitorPlaylist.new(logger: logger),
+        Streamer::PageOnUnexpectedPlaylist.new(pagerduty, max_failures: 3),
         page_on_multiple_non_zero,
       ]
     )

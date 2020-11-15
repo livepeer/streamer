@@ -1,7 +1,7 @@
 module Streamer
   class Stream
     attr_accessor :name
-    attr_accessor :renditions
+    attr_accessor :profiles
     attr_accessor :id
     attr_accessor :stream_key
     attr_accessor :playback_id
@@ -10,10 +10,11 @@ module Streamer
     attr_accessor :ingest_region
     attr_accessor :playback_region
     attr_accessor :current_playlist
+    attr_accessor :current_playlist_size
 
     def initialize(hash)
       @name = hash["name"]
-      @renditions = hash["renditions"]
+      @profiles = hash["profiles"]
       @id = hash["id"]
       @stream_key = hash["streamKey"]
       @playback_id = hash["playbackId"]
@@ -21,6 +22,8 @@ module Streamer
       @platform = hash["platform"]
       @ingest_region = hash["ingest_region"]
       @playback_region = hash["playback_region"]
+
+      @profiles ||= []
     end
 
     def rtmp_ingest_url
@@ -36,12 +39,13 @@ module Streamer
       "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/0_1/index.m3u8"
     end
 
-    def current_playlist_size
-      current_playlist&.scan(/#EXT-X-STREAM-INF/)&.length
+    def expected_playlist_size
+      @profiles.count + 1
     end
 
     def fetch_playlist!
       @current_playlist = Faraday.get(playback_url).body
+      @current_playlist_size = @current_playlist&.scan(/#EXT-X-STREAM-INF/)&.length
     end
 
     def bitmovin_url

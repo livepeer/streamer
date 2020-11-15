@@ -5,6 +5,7 @@ require 'stringio'
 require 'logger'
 require 'streamer/decorators/discord_decorator'
 require 'streamer/decorators/page_on_unexpected_playlist'
+require 'streamer/decorators/monitor_playlist'
 
 module Streamer
 
@@ -221,7 +222,8 @@ RSpec.describe Cycle do
         m3u8
         [
           good_playlist,
-          bad_playlist
+          bad_playlist,
+          good_playlist
         ]
       end
 
@@ -232,7 +234,9 @@ RSpec.describe Cycle do
       end
 
       before do
-        allow(stream).to receive(:fetch_playlist!) do
+        allow(stream).to receive(:fetch_playlist!) { true }
+
+        allow(stream).to receive(:current_playlist) do
           playlists.shift
         end
       end
@@ -246,7 +250,8 @@ RSpec.describe Cycle do
       end
 
       it "notifies pagerduty" do
-        subject.decorate_with(PageOnUnexpectedPlaylist.new(pagerduty))
+        subject.decorate_with(MonitorPlaylist.new(logger: logger))
+        subject.decorate_with(PageOnUnexpectedPlaylist.new(pagerduty, max_failures: 2))
 
         expect(pagerduty).to receive(:trigger_unexpected_playlist).once
 

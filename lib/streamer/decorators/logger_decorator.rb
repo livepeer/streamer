@@ -47,16 +47,8 @@ module Streamer
         info("Shutting down...")
       end
 
-      c.after(:start_monitoring_playlist) do
-        info("Started playlist monitor")
-      end
-
       c.after(:broadcast_success) do
         info("Broadcast successful")
-      end
-
-      c.after(:unexpected_playlist) do
-        info("Unexpected Playlist:\n#{c.current_playlist}")
       end
 
       c.after(:broadcast_terminated) do
@@ -73,10 +65,6 @@ module Streamer
 
       c.before(:interrupt) do
         info("Trapped interrupt signal")
-      end
-
-      c.before(:stop_monitoring_playlist) do
-        info("Stopping playlist monitor")
       end
 
       c.before(:stop_monitoring_source) do

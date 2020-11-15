@@ -10,12 +10,6 @@ require 'rspec/expectations'
 module Streamer
   class Cycle
 
-    class UnexpectedPlaylistSize < StandardError
-      def initialize
-        super("Playlist size is not the right size")
-      end
-    end
-
     # initialized attributes
     attr_reader :grace
     attr_reader :duration
@@ -32,13 +26,14 @@ module Streamer
     attr_reader :stream
     attr_reader :events
     attr_reader :ingest
-    attr_reader :current_playlist_size
-    attr_reader :expected_playlist_size
 
     delegate :bitmovin_url,
       :current_playlist,
       :source,
       :playback,
+      :fetch_playlist!,
+      :current_playlist_size,
+      :expected_playlist_size,
       to: :stream
 
     def initialize(
@@ -93,7 +88,6 @@ module Streamer
             tick = Concurrent::Channel.ticker(tick_interval)
             duration_reached = Concurrent::Channel.timer(duration)
 
-            fire(:start_monitoring_playlist) { start_monitoring_playlist! }
           end
           s.take(duration_reached) do
             fire(:broadcast_success)
@@ -128,6 +122,10 @@ module Streamer
 
     def add_tick_action(name, &block)
       @tick_actions[name] = block
+    end
+
+    def remove_tick_action(name)
+      @tick_actions.delete(name) if @tick_actions.key? name
     end
 
     def elapsed
@@ -198,22 +196,6 @@ module Streamer
     def interrupt!
       fire(:interrupt)
       shutdown!
-    end
-
-    def start_monitoring_playlist!
-      @expected_playlist_size = profiles.size + 1
-
-      add_tick_action(:check_playlist) do
-        stream.fetch_playlist!
-        @current_playlist_size = stream.current_playlist_size
-        if current_playlist_size != expected_playlist_size
-          fire(:unexpected_playlist)
-        end
-      end
-
-      add_cleanup_step(:stop_monitoring_playlist) do
-        true # useful for decorators
-      end
     end
 
     def shutdown!
