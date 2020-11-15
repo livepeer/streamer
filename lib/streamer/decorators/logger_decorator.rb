@@ -39,35 +39,24 @@ module Streamer
 
       c.after(:start_broadcast) do
         info("Executed #{c.broadcaster.command} #{c.broadcaster.args.join(" ")}")
+        info("Watch here: #{c.bitmovin_url}")
         info("Waiting #{c.grace}s before considering the stream booted")
       end
 
-      c.after(:done) do
-        info "FFMPEG completed successfully"
-      end
-
-      c.after(:broadcast_terminated) do
-        info "FFMPEG terminated by signal successfully"
-      end
-
-      c.after(:broadcast_failed) do
-        info "FFMPEG exited non-zero. Notifying watchers"
-      end
-
       c.before(:shutdown) do
-        info("Shutdown")
+        info("Shutting down...")
       end
 
-      c.before(:check_playlist) do
-        info("Checking playlist size is #{c.expected_playlist_size}")
-      end
-
-      c.after(:check_playlist) do
-        info("Expected playlist size of #{c.expected_playlist_size}. Got #{c.current_playlist_size}.")
+      c.after(:start_monitoring_playlist) do
+        info("Started playlist monitor")
       end
 
       c.after(:broadcast_success) do
         info("Broadcast successful")
+      end
+
+      c.after(:unexpected_playlist) do
+        info("Unexpected Playlist:\n#{c.current_playlist}")
       end
 
       c.after(:broadcast_terminated) do
@@ -86,15 +75,20 @@ module Streamer
         info("Trapped interrupt signal")
       end
 
-      events = %i[
-        stop_monitoring_playlist
-        stop_monitoring_source
-        stop_broadcast
-        destroy_stream
-      ].each do |e|
-        c.before(e) do
-          info(e.to_s.gsub("_", " ").capitalize)
-        end
+      c.before(:stop_monitoring_playlist) do
+        info("Stopping playlist monitor")
+      end
+
+      c.before(:stop_monitoring_source) do
+        info("Stopping source monitor")
+      end
+
+      c.before(:stop_broadcast) do
+        info("Stopping broadcast")
+      end
+
+      c.before(:destroy_stream) do
+        info("Destroying stream at #{c.livepeer.base_url}")
       end
 
       c.after(:shutdown) do

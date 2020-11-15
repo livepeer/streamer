@@ -7,7 +7,7 @@ module Streamer
     end
 
     def decorate(cycle)
-      cycle.after(:playlist_too_small) do
+      cycle.after(:unexpected_playlist) do
         pagerduty.trigger_unexpected_playlist(cycle)
       end
     end

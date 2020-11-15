@@ -24,8 +24,8 @@ module Streamer
         )
       end
 
-      c.after(:playlist_too_small) do
-        discord.playlist_too_small!(c, c.current_playlist_size, c.expected_playlist_size)
+      c.after(:unexpected_playlist) do
+        discord.unexpected_playlist!(c, c.current_playlist_size, c.expected_playlist_size)
       end
 
       c.after(:broadcast_failed) do

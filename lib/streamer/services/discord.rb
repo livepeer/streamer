@@ -8,8 +8,15 @@ module Streamer
       @webhook = webhook
     end
 
-    def playlist_too_small!(cycle, actual, expected)
-      send(content: "Playlist Too Small. Actual: #{actual}. Expected: #{expected}. Is transcoding working?!")
+    def unexpected_playlist!(cycle, actual, expected)
+      message = <<~MSG
+        Unexpected Playlist:
+        ```
+        #{cycle.current_playlist}
+        ```
+        Try watching stream: #{cycle.bitmovin_url}
+      MSG
+      send(content: message)
     end
 
     def send(content)

@@ -97,7 +97,6 @@ module Streamer
           end
           s.take(duration_reached) do
             fire(:broadcast_success)
-            fire(:broadcast_done)
             shutdown << true
           end
           s.take(broadcast_exited) do |msg|
@@ -120,10 +119,6 @@ module Streamer
           end
           s.take(tick) { tick! }
         end
-      rescue UnexpectedPlaylistSize => e
-        fire(:playlist_too_small)
-        fire(:broadcast_failed)
-        shutdown!
       end
     end
 
@@ -212,7 +207,7 @@ module Streamer
         stream.fetch_playlist!
         @current_playlist_size = stream.current_playlist_size
         if current_playlist_size != expected_playlist_size
-          raise UnexpectedPlaylistSize.new
+          fire(:unexpected_playlist)
         end
       end
 

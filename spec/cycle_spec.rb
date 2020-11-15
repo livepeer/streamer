@@ -16,7 +16,6 @@ RSpec.describe Cycle do
       playback_region: "mdw",
       ingest_region: "mdw",
       profiles: profiles,
-      analyzer: analyzer,
       livepeer: livepeer,
       tick_interval: tick_interval,
       broadcaster_factory: broadcaster_factory,
@@ -241,7 +240,7 @@ RSpec.describe Cycle do
       it "notifies discord" do
         subject.decorate_with(Streamer::DiscordDecorator.new(discord))
 
-        expect(discord).to receive(:playlist_too_small!).once
+        expect(discord).to receive(:unexpected_playlist!).once
 
         subject.execute
       end
