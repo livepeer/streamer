@@ -39,7 +39,7 @@ module Streamer
 
       c.after(:start_broadcast) do
         info("Executed #{c.broadcaster.command} #{c.broadcaster.args.join(" ")}")
-        info("Watch here: #{c.bitmovin_url}")
+        info("Watch: #{c.bitmovin_url}")
         info("Waiting #{c.grace}s before considering the stream booted")
       end
 
