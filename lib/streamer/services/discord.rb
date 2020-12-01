@@ -12,7 +12,7 @@ module Streamer
       message = <<~MSG
         Unexpected Playlist:
         ```
-        #{cycle.current_playlist}
+        #{cycle.current_playlist.raw}
         ```
         Try watching stream: #{cycle.bitmovin_url}
       MSG

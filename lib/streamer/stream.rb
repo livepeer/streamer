@@ -1,3 +1,5 @@
+require 'streamer/playlist'
+
 module Streamer
   class Stream
     attr_accessor :name
@@ -10,7 +12,7 @@ module Streamer
     attr_accessor :ingest_region
     attr_accessor :playback_region
     attr_accessor :current_playlist
-    attr_accessor :current_playlist_size
+    attr_accessor :expected_playlist
 
     def initialize(hash)
       @name = hash["name"]
@@ -39,13 +41,27 @@ module Streamer
       "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/0_1/index.m3u8"
     end
 
+    def renditions
+      return [] if current_playlist.nil?
+      current_playlist.renditions.map do |x|
+        "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/#{x}"
+      end
+    end
+
     def expected_playlist_size
       @profiles.count + 1
     end
 
+    def current_playlist_size
+      @current_playlist.size
+    end
+
     def fetch_playlist!
-      @current_playlist = Faraday.get(playback_url).body
-      @current_playlist_size = @current_playlist&.scan(/#EXT-X-STREAM-INF/)&.length
+      @current_playlist = Playlist.new(get_playlist_body)
+    end
+
+    def get_playlist_body
+      Faraday.get(playback_url).body
     end
 
     def bitmovin_url

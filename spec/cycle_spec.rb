@@ -60,8 +60,6 @@ RSpec.describe Cycle do
     ]
   end
   let(:livepeer) { double('livepeer') }
-  let(:event_tracker) { EventTracker.new(world) }
-  let(:world) { double('world') }
 
   describe "#execute" do
     let(:stream) do
@@ -83,48 +81,9 @@ RSpec.describe Cycle do
       end
     end
     let(:available_broadcast_seconds) { 5 }
-    let(:broadcaster_factory) { FakeBroadcasterFactory.new("sleep #{available_broadcast_seconds}") }
-
-    class FakeBroadcaster
-      attr_reader :command
-
-      def initialize(command)
-        @command = command
-      end
-
-      def start(channel)
-        @pid = Process.spawn(command)
-
-        Concurrent::Channel.go do
-          _, @status = Process.wait2(@pid)
-          if @status.exitstatus == 0
-            channel << "success"
-          elsif @status.signaled? or @status.exitstatus == 255
-            channel << "killed"
-          else
-            channel << "failed"
-          end
-        end
-
-        self
-      end
-
-      def kill
-        Process.kill("TERM", @pid)
-      rescue Errno::ESRCH
-        # swallow
-      end
-    end
-
-    class FakeBroadcasterFactory
-      attr_reader :command
-
-      def initialize(command)
-        @command = command
-      end
-
-      def create(ingest)
-        FakeBroadcaster.new(command)
+    let(:broadcaster_factory) do
+      double('broadcaster_factory').tap do |x|
+        allow(x).to receive(:create) { Streamer::Broadcaster.new("sleep", "30") }
       end
     end
 

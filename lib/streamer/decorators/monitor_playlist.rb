@@ -9,14 +9,25 @@ module Streamer
     def decorate(cycle)
       c = cycle
 
+      c.before(:booted) do
+        c.fetch_playlist!
+      end
+
       c.after(:booted) do
         c.fire(:start_monitoring_playlist) do
           c.add_tick_action(:check_playlist) do
-            c.fetch_playlist!
+            current_playlist = c.current_playlist
+
+            new_playlist = c.fetch_playlist!
+
             if c.current_playlist_size != c.expected_playlist_size
               c.fire(:unexpected_playlist)
             else
               c.fire(:valid_playlist)
+            end
+
+            if current_playlist.present? and current_playlist.renamed?(new_playlist)
+              c.fire(:playlist_renamed)
             end
           end
         end
@@ -35,7 +46,7 @@ module Streamer
       end
 
       c.after(:unexpected_playlist) do
-        logger.info("Unexpected Playlist:\n#{c.current_playlist}")
+        logger.info("Unexpected Playlist:\n#{c.current_playlist.raw}")
       end
     end
   end
