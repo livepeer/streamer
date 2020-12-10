@@ -76,6 +76,7 @@ begin
   )
 
   while true
+    playlist_monitor = Streamer::PlaylistMonitor.new
     current_cycle = Streamer::Cycle.new(
       grace: boot_delay,
       duration: duration,
@@ -87,8 +88,15 @@ begin
       broadcaster_factory: Streamer::BroadcasterFactory.new,
       decorators: [
         Streamer::LoggerDecorator.new(logger),
-        Streamer::MonitorPlaylist.new(logger: logger),
-        Streamer::PageOnUnexpectedPlaylist.new(pagerduty, max_failures: 3),
+        Streamer::MonitorPlaylist.new(
+          monitor: playlist_monitor,
+        ),
+        Streamer::PlaylistMonitorReporter.new(
+          monitor: playlist_monitor,
+          discord: discord,
+          logger: logger,
+          pagerduty: pagerduty,
+        ),
         page_on_multiple_non_zero,
       ]
     )
