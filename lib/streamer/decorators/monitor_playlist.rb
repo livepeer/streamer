@@ -1,52 +1,43 @@
+require 'active_support/core_ext'
+
+require 'chronic_duration'
+require 'streamer/monitors/playlist_monitor'
+
 module Streamer
   class MonitorPlaylist
-    attr_reader :logger
+    attr_reader :monitor
+    attr_reader :cycle
 
-    def initialize(logger:)
-      @logger = logger
+    alias_method :c, :cycle
+
+    THRESHOLD = 3.minutes
+
+    def initialize(monitor: PlaylistMonitor.new)
+      @monitor = monitor
     end
 
     def decorate(cycle)
-      c = cycle
+      @cycle = cycle
 
-      c.before(:booted) do
-        c.fetch_playlist!
-      end
+      monitor.on(:sampled) { |m, type| c.fire("playlist_sampled_#{type}".to_sym) }
+      monitor.on(:alert_started) { c.fire(:playlist_alert_started) }
+      monitor.on(:alert_stopped) { c.fire(:playlist_alert_stopped) }
+      monitor.on(:alarm_started) { c.fire(:playlist_alarm_started) }
+      monitor.on(:alarm_stopped) { c.fire(:playlist_alarm_stopped) }
+
+      monitor.watch(cycle)
+
+      c.before(:booted) { c.fetch_playlist! }
 
       c.after(:booted) do
         c.fire(:start_monitoring_playlist) do
-          c.add_tick_action(:check_playlist) do
-            current_playlist = c.current_playlist
-
-            new_playlist = c.fetch_playlist!
-
-            if c.current_playlist_size != c.expected_playlist_size
-              c.fire(:unexpected_playlist)
-            else
-              c.fire(:valid_playlist)
-            end
-
-            if current_playlist.present? and current_playlist.renamed?(new_playlist)
-              c.fire(:playlist_renamed)
-            end
-          end
+          c.add_tick_action(:check_playlist) { monitor.sample! }
         end
 
         c.add_cleanup_step(:stop_monitoring_playlist) do
+          monitor.shutdown
           c.remove_tick_action(:check_playlist)
         end
-      end
-
-      c.after(:start_monitoring_playlist) do
-        logger.info("Started playlist monitor")
-      end
-
-      c.before(:stop_monitoring_playlist) do
-        logger.info("Stopping playlist monitor")
-      end
-
-      c.after(:unexpected_playlist) do
-        logger.info("Unexpected Playlist:\n#{c.current_playlist.raw}")
       end
     end
   end

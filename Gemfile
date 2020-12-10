@@ -8,5 +8,11 @@ gem "faraday"
 gem "concurrent-ruby"
 gem "concurrent-ruby-edge", require: 'concurrent-edge'
 gem "activesupport"
-gem "rspec"
+gem "timecop"
+gem "chronic_duration"
 gem "pagerduty"
+
+group :test do
+  gem "faker"
+  gem "rspec"
+end

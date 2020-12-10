@@ -3,7 +3,7 @@ module Streamer
     attr_reader :command
     attr_reader :args
 
-    def initialize(command, args)
+    def initialize(command, args=[])
       @command = command
       @args = args
     end

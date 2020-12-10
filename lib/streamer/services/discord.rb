@@ -19,15 +19,17 @@ module Streamer
       send(content: message)
     end
 
+    # FIXME: refactor to avoid #send which is a ruby core method
     def send(content)
       return false if webhook.empty?
 
-      response = Faraday.post(webhook) do |req|
+      Faraday.post(webhook) do |req|
         req.headers['Content-Type'] = 'application/json'
         req.body = content.to_json
       end
-      response
     end
+
+    alias_method :post, :send
 
   end
 end

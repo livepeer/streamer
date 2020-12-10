@@ -16,28 +16,10 @@ module Streamer
 
     delegate :trigger, to: :client
 
-    def trigger_unexpected_playlist(cycle, failures)
-      @client.incident("#{cycle.session_name}-unexpected-playlist").trigger(
-        summary: "Unexpected Playlist Detected #{failures}x (#{component} #{cycle.ingest_region}/#{cycle.playback_region})",
-        source: cycle.ingest,
-        severity: "error",
-        timestamp: Time.now,
-        component: cycle.session_name,
-        links: [
-          {
-            href: cycle.bitmovin_url,
-            text: "Playback (bitmovin)",
-          },
-        ],
-        custom_details: {
-          ingest: cycle.ingest,
-          playback: cycle.playback,
-          actual_size: cycle.current_playlist_size,
-          expected_size: cycle.expected_playlist_size,
-          profiles: cycle.profiles,
-          playlist: cycle.current_playlist,
-        }
-      )
+    def trigger(key, options)
+      return false if integration_key.nil?
+
+      @client.incident(key).trigger(options)
     end
 
   end

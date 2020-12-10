@@ -14,6 +14,10 @@ module Streamer
       [raw.scan(ARB_STACK_NAMES_PATTERN)].flatten
     end
 
+    def source_only?
+      size == 1
+    end
+
     def size
       arb_stack_names.length
     end

@@ -75,3 +75,18 @@ streams:
 We rely on prometheus pod scrapers to collect metrics from our test streams. Each pod
 will be labeled with test.livepeer.io/{important-attribute} for filtering in our
 grafana dashboards.
+
+## Simulating Conditions
+
+### Playlist rename
+1. create a stream directly in mist
+2. start a cycle using the mist url as ingest
+3. manually change the api for the stream in mist to something wrong
+3. manually change the api for the stream in mist back to the correct value
+
+Playlist should have changed
+
+### Breaking transcoding for an rtmp stream
+1. delete
+
+### Breaking startup of new streams

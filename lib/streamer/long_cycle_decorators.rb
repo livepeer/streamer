@@ -13,6 +13,8 @@ require 'streamer/decorators/monitor_playlist'
 require 'streamer/decorators/monitor_source'
 require 'streamer/decorators/monitor_rendition'
 require 'streamer/decorators/logger_decorator'
+require 'streamer/decorators/playlist_monitor_reporter'
+require 'streamer/monitors/playlist_monitor'
 
 module Streamer
   class LongCycleDecorators
@@ -22,10 +24,20 @@ module Streamer
       analyzer:,
       pagerduty:
     )
+      playlist_monitor = PlaylistMonitor.new
+
       [
         Streamer::LoggerDecorator.new(logger),
         Streamer::DiscordDecorator.new(discord),
-        Streamer::MonitorPlaylist.new(logger: logger),
+        Streamer::MonitorPlaylist.new(
+          monitor: playlist_monitor,
+        ),
+        Streamer::PlaylistMonitorReporter.new(
+          monitor: playlist_monitor,
+          discord: discord,
+          logger: logger,
+          pagerduty: pagerduty,
+        ),
         Streamer::MonitorSource.new(
           analyzer: analyzer,
           logger: logger,

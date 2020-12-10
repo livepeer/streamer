@@ -160,7 +160,7 @@ RSpec.describe "long cycle" do
   it 'works' do
     cycle.execute
 
-    expect(subject.events).to eq(%i[
+    expect(cycle.events).to eq(%i[
       init
       init__create_stream
       start_broadcast
