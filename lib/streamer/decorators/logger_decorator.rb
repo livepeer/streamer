@@ -34,7 +34,7 @@ module Streamer
       end
 
       c.before(:start_broadcast) do
-        info("Starting #{c.duration}s broadcast to #{c.ingest}")
+        info("[#{c.ingest_region}->#{c.playback_region}] starting #{c.duration}s broadcast")
       end
 
       c.after(:start_broadcast) do
