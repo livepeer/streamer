@@ -99,7 +99,7 @@ RSpec.describe PlaylistMonitorReporter  do
 
         specify "discord is notified with error summary" do
           message = <<~MSG.chomp
-            Cycle (fra->mdw) experienced bad playlists (3x) for 2 seconds. Normal playlists have resumed.
+            [fra->mdw] experienced bad playlists (3x) for 2 seconds. Normal playlists have resumed.
           MSG
 
           expect(discord).to have_received(:post).with(content: message)
@@ -126,7 +126,7 @@ RSpec.describe PlaylistMonitorReporter  do
 
     specify "discord is notified" do
       message = <<~MSG.chomp
-        Cycle (fra->mdw) has been experiencing bad playlists (3x) for over 3 minutes.
+        [fra->mdw] has been experiencing bad playlists (3x) for over 3 minutes.
       MSG
 
       expect(discord).to have_received(:post).with(content: message)
@@ -173,13 +173,28 @@ RSpec.describe PlaylistMonitorReporter  do
       specify "logs messages at each stage" do
         expected = <<~OUTPUT
           WARN: bad
-          WARN: Cycle (fra->mdw) has experienced a bad playlist.
+          WARN: [fra->mdw] has experienced a bad playlist: bad.
           WARN: bad
           WARN: bad
-          WARN: Cycle (fra->mdw) has been experiencing bad playlists (3x) for over 3 minutes.
+          WARN: [fra->mdw] has been experiencing bad playlists (3x) for over 3 minutes.
           WARN: bad
           WARN: bad
-          WARN: Cycle (fra->mdw) experienced bad playlists (5x) for 6 minutes. Normal playlists have resumed.
+          WARN: [fra->mdw] experienced bad playlists (5x) for 6 minutes. Normal playlists have resumed.
+        OUTPUT
+        output.rewind
+        expect(output.read).to eq(expected)
+      end
+    end
+
+    describe "only 1 bad playlist before normal resume" do
+      it "does not summarize" do
+        monitor.record(:bad)
+        monitor.record(:normal)
+        monitor.record(:normal)
+
+        expected = <<~OUTPUT
+          WARN: bad
+          WARN: [fra->mdw] has experienced a bad playlist: bad.
         OUTPUT
         output.rewind
         expect(output.read).to eq(expected)
@@ -188,8 +203,6 @@ RSpec.describe PlaylistMonitorReporter  do
 
     context "shutting down after alarm" do
       before do
-        monitor.start_alerting
-
         3.times { monitor.record(:bad) }
 
         Timecop.travel(3.minutes.from_now) { monitor.start_alarming }
@@ -202,14 +215,14 @@ RSpec.describe PlaylistMonitorReporter  do
 
       specify "logs messages at each stage" do
         expected = <<~OUTPUT
-          WARN: Cycle (fra->mdw) has experienced a bad playlist.
+          WARN: bad
+          WARN: [fra->mdw] has experienced a bad playlist: bad.
           WARN: bad
           WARN: bad
+          WARN: [fra->mdw] has been experiencing bad playlists (3x) for over 3 minutes.
           WARN: bad
-          WARN: Cycle (fra->mdw) has been experiencing bad playlists (3x) for over 3 minutes.
           WARN: bad
-          WARN: bad
-          WARN: Cycle (fra->mdw) experienced bad playlists (5x) for 6 minutes before shutdown.
+          WARN: [fra->mdw] experienced bad playlists (5x) for 6 minutes before shutdown.
         OUTPUT
         output.rewind
         expect(output.read).to eq(expected)

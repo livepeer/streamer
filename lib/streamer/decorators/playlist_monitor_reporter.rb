@@ -19,7 +19,7 @@ module Streamer
 
       monitor.on(:alert_started) do
         message = <<~MSG.chomp
-          Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) has experienced a bad playlist.
+          [#{cycle.ingest_region}->#{cycle.playback_region}] has experienced a bad playlist: #{monitor.errors.first}.
         MSG
 
         discord.post(content: message)
@@ -27,8 +27,10 @@ module Streamer
       end
 
       monitor.on(:alert_stopped) do
+        next unless monitor.errors.count > 1
+
         message = <<~MSG.chomp
-          Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) experienced bad playlists (#{monitor.errors.count}x) for #{monitor.pretty_duration}. Normal playlists have resumed.
+          [#{cycle.ingest_region}->#{cycle.playback_region}] experienced bad playlists (#{monitor.errors.count}x) for #{monitor.pretty_duration}. Normal playlists have resumed.
         MSG
 
         logger.warn(message)
@@ -37,7 +39,7 @@ module Streamer
 
       monitor.on(:alarm_started) do
         message = <<~MSG.chomp
-          Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) has been experiencing bad playlists (#{monitor.errors.count}x) for over #{monitor.pretty_duration}.
+          [#{cycle.ingest_region}->#{cycle.playback_region}] has been experiencing bad playlists (#{monitor.errors.count}x) for over #{monitor.pretty_duration}.
         MSG
 
         logger.warn(message)
@@ -67,7 +69,7 @@ module Streamer
       monitor.on(:sampled) do |m, e|
         if e == :rename
           message = <<~MSG.chomp
-            Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) saw rename.
+            [#{cycle.ingest_region}->#{cycle.playback_region}] saw rename.
           MSG
 
           logger.warn(message)
@@ -78,7 +80,7 @@ module Streamer
       monitor.on(:shutdown) do
         if monitor.alerting? or monitor.alarming?
           message = <<~MSG.chomp
-            Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) experienced bad playlists (#{monitor.errors.count}x) for #{monitor.pretty_duration} before shutdown.
+            [#{cycle.ingest_region}->#{cycle.playback_region}] experienced bad playlists (#{monitor.errors.count}x) for #{monitor.pretty_duration} before shutdown.
           MSG
 
           logger.warn(message)
