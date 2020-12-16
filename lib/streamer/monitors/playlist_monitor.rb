@@ -42,17 +42,20 @@ module Streamer
     end
 
     def sample!
-      a = stream.current_playlist
-      b = stream.fetch_playlist!
+      sample = stream.fetch_playlist!
 
-      if b.source_only?
+      if sample.source_only?
         record(:source_only)
-      elsif b.nil?
+      elsif sample.nil?
         record(:null)
-      elsif b.renamed?(a)
-        record(:rename)
       else
-        record(:normal)
+        if sample.renamed?(@last_normal_playlist)
+          record(:rename)
+        else
+          record(:normal)
+        end
+
+        @last_normal_playlist = sample
       end
     rescue Faraday::ConnectionFailed => e
       record(:conection_failed_error)

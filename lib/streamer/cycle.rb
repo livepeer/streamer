@@ -88,12 +88,13 @@ module Streamer
 
             tick = Concurrent::Channel.ticker(tick_interval)
             duration_reached = Concurrent::Channel.timer(duration)
-
           end
+
           s.take(duration_reached) do
             fire(:broadcast_success)
             shutdown << true
           end
+
           s.take(broadcast_exited) do |msg|
             case msg
             when "success"
@@ -107,11 +108,13 @@ module Streamer
             end
             shutdown << true
           end
+
           s.take(shutdown) do
             shutdown!
             broadcast_exited.close
             return
           end
+
           s.take(tick) { tick! }
         end
       end

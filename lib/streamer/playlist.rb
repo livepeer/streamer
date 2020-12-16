@@ -30,7 +30,13 @@ module Streamer
       renditions.count
     end
 
+    def normal?
+      rendition_count > 0
+    end
+
     def renamed?(b)
+      return false if b.nil?
+
       renditions != b.renditions
     end
   end

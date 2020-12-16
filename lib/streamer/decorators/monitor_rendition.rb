@@ -23,7 +23,7 @@ module Streamer
         logger.info("Added rendition monitor at #{analyzer.host}")
       end
 
-      c.after(:playlist_renamed) do
+      c.after(:playlist_sampled_rename) do
         until active_monitors.empty? 
           monitor = active_monitors.pop
           c.fire(:stop_monitoring_rendition) do

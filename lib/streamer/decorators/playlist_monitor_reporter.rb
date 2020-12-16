@@ -22,6 +22,7 @@ module Streamer
           Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) has experienced a bad playlist.
         MSG
 
+        discord.post(content: message)
         logger.warn(message)
       end
 

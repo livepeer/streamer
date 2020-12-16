@@ -7,7 +7,7 @@ require 'streamer/long_cycle_decorators'
 
 RSpec.describe "long cycle" do
   let(:boot_delay) { 0 }
-  let(:duration) { 4 }
+  let(:duration) { 5 }
   let(:playback_region) { 'fake_playback_region' }
   let(:ingest_region) { 'fake_ingest_region' }
   let(:session_name) { 'test_session_id' }
@@ -110,6 +110,7 @@ RSpec.describe "long cycle" do
   let(:discord) do
     double('discord').tap do |x|
       allow(x).to receive(:send) { true }
+      allow(x).to receive(:post) { true }
       allow(x).to receive(:unexpected_playlist!) { true }
     end
   end
@@ -163,15 +164,29 @@ RSpec.describe "long cycle" do
     expect(cycle.events).to eq(%i[
       init
       init__create_stream
+
       start_broadcast
+
       booted
       booted__start_monitoring_source
       booted__start_monitoring_playlist
+      booted__start_monitoring_playlist__start_monitoring_rendition
+
       tick
       tick__check_playlist
+      tick__check_playlist__playlist_sampled_source_only
+      tick__check_playlist__playlist_alert_started
+
+      tick
+      tick__check_playlist
+      tick__check_playlist__playlist_sampled_normal
+      tick__check_playlist__playlist_alert_stopped
+
       broadcast_success
+
       shutdown
       shutdown__stop_monitoring_playlist
+      shutdown__stop_monitoring_rendition
       shutdown__stop_monitoring_source
       shutdown__stop_broadcast
       shutdown__destroy_stream
@@ -180,7 +195,7 @@ RSpec.describe "long cycle" do
 
   context "on unexpected_playlist" do
     let(:boot_delay) { 0 }
-    let(:duration) { 4 }
+    let(:duration) { 7 }
     # FIXME: this is hardcoded and thus has no effect here, but it should
     let(:tick_interval) { 2 }
     let(:playlists) do
@@ -202,12 +217,13 @@ RSpec.describe "long cycle" do
       m3u8
       [
         good_playlist,
+        good_playlist,
         bad_playlist,
         good_playlist
       ]
     end
 
-    it 'works' do
+    it 'records expected events' do
       cycle.execute
 
       expect(subject.events).to eq(%i[
@@ -217,12 +233,26 @@ RSpec.describe "long cycle" do
         booted
         booted__start_monitoring_source
         booted__start_monitoring_playlist
+        booted__start_monitoring_playlist__start_monitoring_rendition
+
         tick
         tick__check_playlist
-        tick__check_playlist__unexpected_playlist
+        tick__check_playlist__playlist_sampled_normal
+
+        tick
+        tick__check_playlist
+        tick__check_playlist__playlist_sampled_source_only
+        tick__check_playlist__playlist_alert_started
+
+        tick
+        tick__check_playlist
+        tick__check_playlist__playlist_sampled_normal
+        tick__check_playlist__playlist_alert_stopped
+
         broadcast_success
         shutdown
         shutdown__stop_monitoring_playlist
+        shutdown__stop_monitoring_rendition
         shutdown__stop_monitoring_source
         shutdown__stop_broadcast
         shutdown__destroy_stream
@@ -280,7 +310,7 @@ RSpec.describe "long cycle" do
       ]
     end
 
-    it 'add/removes analyzers on rename' do
+    it 'add/removes analyzers on rename', aggregate: true do
       expect(analyzer).to receive(:add).with("https://fake_playback_region-cdn.test.livepeer.monster/hls/fake_playback/0_1/index.m3u8").ordered
       expect(analyzer).to receive(:add).with("https://fake_playback_region-cdn.test.livepeer.monster/hls/fake_playback/2_1/index.m3u8").ordered
       expect(analyzer).to receive(:remove).with("https://fake_playback_region-cdn.test.livepeer.monster/hls/fake_playback/2_1/index.m3u8").ordered
@@ -301,27 +331,31 @@ RSpec.describe "long cycle" do
         booted__start_monitoring_source
         booted__start_monitoring_playlist
         booted__start_monitoring_playlist__start_monitoring_rendition
+
         tick
         tick__check_playlist
-        tick__check_playlist__valid_playlist
+        tick__check_playlist__playlist_sampled_normal
+
         tick
         tick__check_playlist
-        tick__check_playlist__valid_playlist
-        tick__check_playlist__playlist_renamed
-        tick__check_playlist__playlist_renamed__stop_monitoring_rendition
-        tick__check_playlist__playlist_renamed__start_monitoring_rendition
+        tick__check_playlist__playlist_sampled_rename
+        tick__check_playlist__playlist_sampled_rename__stop_monitoring_rendition
+        tick__check_playlist__playlist_sampled_rename__start_monitoring_rendition
+
         tick
         tick__check_playlist
-        tick__check_playlist__valid_playlist
+        tick__check_playlist__playlist_sampled_normal
+
         tick
         tick__check_playlist
-        tick__check_playlist__valid_playlist
-        tick__check_playlist__playlist_renamed
-        tick__check_playlist__playlist_renamed__stop_monitoring_rendition
-        tick__check_playlist__playlist_renamed__start_monitoring_rendition
+        tick__check_playlist__playlist_sampled_rename
+        tick__check_playlist__playlist_sampled_rename__stop_monitoring_rendition
+        tick__check_playlist__playlist_sampled_rename__start_monitoring_rendition
+
         tick
         tick__check_playlist
-        tick__check_playlist__valid_playlist
+        tick__check_playlist__playlist_sampled_normal
+
         broadcast_success
         shutdown
         shutdown__stop_monitoring_playlist

@@ -8,7 +8,7 @@ require 'timecop'
 
 RSpec.describe Streamer::MonitorPlaylist do
   let(:boot_delay) { 0 }
-  let(:duration) { 9 }
+  let(:duration) { 12 }
   let(:playback_region) { 'fake_playback_region' }
   let(:ingest_region) { 'fake_ingest_region' }
   let(:session_name) { 'test_session_id' }
@@ -84,9 +84,9 @@ RSpec.describe Streamer::MonitorPlaylist do
     source_only,
     -> { Timecop.freeze(4.minutes.from_now); source_only },
     b,
-    Faker::Livepeer.raw_full_playlist,
-    Faker::Livepeer.raw_full_playlist,
-    Faker::Livepeer.raw_full_playlist,
+    b,
+    b,
+    b
   ]}
 
   let(:cycle) do
@@ -134,6 +134,10 @@ RSpec.describe Streamer::MonitorPlaylist do
       tick__check_playlist__playlist_sampled_rename
       tick__check_playlist__playlist_alert_stopped
       tick__check_playlist__playlist_alarm_stopped
+
+      tick
+      tick__check_playlist
+      tick__check_playlist__playlist_sampled_normal
 
       broadcast_success
       shutdown

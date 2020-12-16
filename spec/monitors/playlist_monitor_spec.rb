@@ -58,6 +58,29 @@ RSpec.describe PlaylistMonitor do
       expect(monitor.errors.count).to eq(1)
     end
 
+    context "when renamed playlist is seen" do
+      before do
+        timeline
+          .fwd(1.second)
+          .add(:rename)
+
+        timeline.play(monitor)
+      end
+
+      it "stops alerting" do
+        expect(monitor).to have_received(:stop_alerting).once
+      end
+
+      it "alert is resolved", aggregate_errors: true do
+        expect(monitor.alert_started_at).to be_nil
+        expect(monitor.status).to eq(:nominal)
+      end
+
+      it "alert duration is remembered" do
+        expect(monitor.last_alert_duration).to eq(1.seconds)
+      end
+    end
+
     context "when normal playlists resume" do
       before do
         timeline

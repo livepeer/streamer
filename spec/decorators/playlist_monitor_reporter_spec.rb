@@ -46,20 +46,33 @@ RSpec.describe PlaylistMonitorReporter  do
     before { monitor.start_alerting }
 
     specify "discord is notified" do
-      expect(discord).to_not receive(:post)
+      expect(discord).to have_received(:post)
     end
 
     specify "pagerduty is not notified" do
-      expect(pagerduty).to_not receive(:trigger)
+      expect(pagerduty).to_not have_received(:trigger)
+    end
+
+    specify "message is logged" do
+      expect(logger).to have_received(:warn)
     end
 
     context "when bad playlists continue to be seen" do
+      let(:error_count) { 3 }
+      before do
+        error_count.times { monitor.record(:bod) }
+      end
+
       specify "discord is not notified" do
         expect(discord).to_not receive(:post)
       end
 
       specify "pagerduty is not notified" do
         expect(pagerduty).to_not receive(:trigger)
+      end
+
+      specify "message is logged for each error" do
+        expect(logger).to have_received(:warn).at_least(error_count).times
       end
     end
 
