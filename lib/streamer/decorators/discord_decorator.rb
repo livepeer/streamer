@@ -30,7 +30,13 @@ module Streamer
 
       c.after(:broadcast_failed) do
         discord.send(
-          content: "FFMPEG exited non-zero when broadcasting to #{c.ingest}"
+          content: "#{c.ingest_region}->#{c.playback_region} FFMPEG exited non-zero when broadcasting to #{c.ingest}"
+        )
+      end
+
+      c.after(:broadcast_terminated) do
+        discord.post(
+          content: "#{c.ingest_region}->#{c.playback_region} FFMPEG recieved term signal. Shutting down."
         )
       end
     end
