@@ -42,6 +42,14 @@ RSpec.describe PlaylistMonitorReporter  do
     decorator.decorate(cycle)
   end
 
+  context "when playlist is renamed" do
+    before { monitor.record(:rename) }
+
+    specify "discord is notified" do
+      expect(discord).to have_received(:post)
+    end
+  end
+
   context "when alert starts" do
     before { monitor.start_alerting }
 

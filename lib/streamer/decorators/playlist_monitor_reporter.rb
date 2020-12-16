@@ -64,6 +64,17 @@ module Streamer
 
       monitor.on(:bad_playlist) { |m, e| logger.warn(e) }
 
+      monitor.on(:sampled) do |m, e|
+        if e == :rename
+          message = <<~MSG.chomp
+            Cycle (#{cycle.ingest_region}->#{cycle.playback_region}) saw rename.
+          MSG
+
+          logger.warn(message)
+          discord.post(content: message)
+        end
+      end
+
       monitor.on(:shutdown) do
         if monitor.alerting? or monitor.alarming?
           message = <<~MSG.chomp
