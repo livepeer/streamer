@@ -158,7 +158,7 @@ RSpec.describe "long cycle" do
     )
   end
 
-  it 'works' do
+  it 'emits expected events during one execution' do
     cycle.execute
 
     expect(cycle.events).to eq(%i[
@@ -300,6 +300,7 @@ RSpec.describe "long cycle" do
         #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=598544,RESOLUTION=640x360,FRAME-RATE=30,CODECS="avc1.4d401e,mp4a.40.2"
         10_1/index.m3u8
       m3u8
+
       [
         a,
         a,
