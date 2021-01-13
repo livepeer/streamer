@@ -25,11 +25,7 @@ module Streamer
         info("Created stream. id='#{c.stream.id}' key='#{c.stream.stream_key}' playback='#{c.stream.playback}'")
       end
 
-      c.before(:boot) do
-        info("Waiting #{grace}s before adding hlsanalyzer monitor")
-      end
-
-      c.after(:boot) do
+      c.after(:booted) do
         info("Booted")
       end
 
