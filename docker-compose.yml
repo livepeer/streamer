@@ -6,6 +6,7 @@ services:
     environment:
       - LIVEPEER_API_KEY=${LIVEPEER_API_KEY}
       - LIVEPEER_API_HOST=${LIVEPEER_API_HOST}
+      - PLAYBACK_SECRET=${PLAYBACK_SECRET}
       - HLS_ANALYZER_API_KEY=${HLS_ANALYZER_API_KEY}
       - HLS_ANALYZER_API_HOST=${HLS_ANALYZER_API_HOST}
       - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
@@ -40,27 +41,27 @@ services:
       - flv
       - rtmp://mdw-rtmp.livepeer.monster/live/74e2-qimo-7aaf-r7kn
 
-  monitor:
-    build: .
-    volumes:
-      - .:/app
-    entrypoint:
-      - ./bin/stream-monitor
-    command:
-      - -wait-for-target
-      - 120s
-      - -rtmp-url
-      - ${INJEST_URL}
-      - -media-url
-      - ${PLAYBACK_URL}
-      - -time
-      - ${DURATION}
-      - -ignore-time-drift
-      - -ignore-gaps
-      - -v
-      - "1"
-    ports:
-      - 9091:9090
+  # monitor:
+  #   build: .
+  #   volumes:
+  #     - .:/app
+  #   entrypoint:
+  #     - ./bin/stream-monitor
+  #   command:
+  #     - -wait-for-target
+  #     - 120s
+  #     - -rtmp-url
+  #     - ${INJEST_URL}
+  #     - -media-url
+  #     - ${PLAYBACK_URL}
+  #     - -time
+  #     - ${DURATION}
+  #     - -ignore-time-drift
+  #     - -ignore-gaps
+  #     - -v
+  #     - "1"
+  #   ports:
+  #     - 9091:9090
 
   grafana:
     environment:

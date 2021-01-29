@@ -13,6 +13,7 @@ module Streamer
     attr_accessor :playback_region
     attr_accessor :current_playlist
     attr_accessor :expected_playlist
+    attr_accessor :playback_secret
 
     def initialize(hash)
       @name = hash["name"]
@@ -24,6 +25,7 @@ module Streamer
       @platform = hash["platform"]
       @ingest_region = hash["ingest_region"]
       @playback_region = hash["playback_region"]
+      @playback_secret = ENV["PLAYBACK_SECRET"]
 
       @profiles ||= []
     end
@@ -33,7 +35,11 @@ module Streamer
     end
 
     def playback_url
-      "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/index.m3u8"
+      if playback_secret.present?
+        "https://#{playback_region}-playback-#{playback_secret}.#{platform}/hls/#{playback_id}/index.m3u8"
+      else
+        "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/index.m3u8"
+      end
     end
     alias :playback :playback_url
 
