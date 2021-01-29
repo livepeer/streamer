@@ -4,6 +4,32 @@ require 'faraday'
 
 module Streamer
 
+  # This lifecycle decorator monitors the playlist returned on each "tick" and
+  # fires lifecycle events when it sees it change.
+  #
+  # It currently will detect the following events:
+  #   - normal
+  #   - source_only, a playlist without renditions
+  #   - renamed,  a playlist with renditions at new urls
+  #   - null, an empty playlist
+  #   - connection_failed_error, couldn't fetch the playlist
+  #   - timeout_error, playlist request took too long
+  #   - client_error, catch all for any client http error
+  #   - server_error, catch all for any server http error
+  #
+  # In addition to recording these events this decorator also tracks "bad"
+  # events and raises an alerts as these events happen and eventually alarms
+  # if the bad condition persists for too long.
+  #
+  # Callers use the following hooks to respond to these conditions.
+  # for the callers to handle
+  #
+  # The following hooks are supported
+  #   - sampled, fired after a playlist event is recorded
+  #   - alert_started, fired after a playlist event is recorded
+  #
+  # TODO: This should likely be broken into two classes. One to request
+  # playlists and surface events and another to monitor those events
   class PlaylistMonitor
     attr_reader :events
     attr_reader :errors
