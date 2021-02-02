@@ -32,7 +32,7 @@ pagerduty = Streamer::PagerDuty.new(
   integration_key: ENV.fetch("PAGER_DUTY_API_KEY"),
   component: ENV.fetch("PAGER_DUTY_COMPONENT"),
 )
-page_after_n_failures = ENV.fetch("PAGE_AFTER_N_FAILURES", 3)
+max_non_zero_exists = ENV.fetch("PAGE_AFTER_N_FAILURES", 3)
 
 logger = Logger.new($stdout)
 session_name = SecureRandom.uuid
@@ -69,14 +69,7 @@ begin
     raise TermSignal
   end
 
-  page_on_multiple_non_zero = Streamer::PageMulipleNonZero.new(
-    pagerduty: pagerduty,
-    logger: logger,
-    max_failures: page_after_n_failures,
-  )
-
   while true
-    playlist_monitor = Streamer::PlaylistMonitor.new
     current_cycle = Streamer::Cycle.new(
       grace: boot_delay,
       duration: duration,
@@ -86,19 +79,12 @@ begin
       session_name: session_name,
       profiles: profiles,
       broadcaster_factory: Streamer::BroadcasterFactory.new,
-      decorators: [
-        Streamer::LoggerDecorator.new(logger),
-        Streamer::MonitorPlaylist.new(
-          monitor: playlist_monitor,
-        ),
-        Streamer::PlaylistMonitorReporter.new(
-          monitor: playlist_monitor,
-          discord: discord,
-          logger: logger,
-          pagerduty: pagerduty,
-        ),
-        page_on_multiple_non_zero,
-      ]
+      decorators: Streamer::ShortCycleDecorators.create(
+        logger: logger,
+        discord: discord,
+        pagerduty: pagerduty,
+        max_non_zero_exists: max_non_zero_exists,
+      ),
     )
     current_cycle.execute
   end

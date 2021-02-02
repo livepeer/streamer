@@ -8,7 +8,6 @@ require 'active_support/core_ext'
 require 'rspec/expectations'
 
 require 'streamer/decorators/discord_decorator'
-require 'streamer/decorators/page_on_excessive_rename'
 require 'streamer/decorators/monitor_playlist'
 require 'streamer/decorators/monitor_source'
 require 'streamer/decorators/monitor_rendition'
@@ -17,18 +16,17 @@ require 'streamer/decorators/playlist_monitor_reporter'
 require 'streamer/monitors/playlist_monitor'
 
 module Streamer
-  class LongCycleDecorators
+  class ShortCycleDecorators
     def self.create(
       logger:,
       discord:,
-      analyzer:,
-      pagerduty:
+      pagerduty:,
+      max_non_zero_exists: 3
     )
       playlist_monitor = PlaylistMonitor.new
 
       [
         Streamer::LoggerDecorator.new(logger),
-        Streamer::DiscordDecorator.new(discord),
         Streamer::MonitorPlaylist.new(
           monitor: playlist_monitor,
         ),
@@ -38,15 +36,10 @@ module Streamer
           logger: logger,
           pagerduty: pagerduty,
         ),
-        Streamer::MonitorSource.new(
-          analyzer: analyzer,
+        Streamer::PageMulipleNonZero.new(
+          pagerduty: pagerduty,
           logger: logger,
-          discord: discord,
-        ),
-        Streamer::MonitorRendition.new(
-          analyzer: analyzer,
-          logger: logger,
-          discord: discord,
+          max_failures: max_non_zero_exists,
         ),
       ]
     end
