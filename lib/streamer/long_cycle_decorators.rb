@@ -48,6 +48,12 @@ module Streamer
           logger: logger,
           discord: discord,
         ),
+        Streamer::PageOnExcessiveRename.new(
+          logger: logger,
+          discord: discord,
+          pagerduty: pagerduty,
+          max_renames: 10,
+        )
       ]
     end
   end

@@ -8,6 +8,7 @@ require 'active_support/core_ext'
 require 'rspec/expectations'
 
 require 'streamer/decorators/discord_decorator'
+require 'streamer/decorators/page_on_excessive_rename'
 require 'streamer/decorators/monitor_playlist'
 require 'streamer/decorators/monitor_source'
 require 'streamer/decorators/monitor_rendition'
@@ -41,6 +42,12 @@ module Streamer
           logger: logger,
           max_failures: max_non_zero_exists,
         ),
+        Streamer::PageOnExcessiveRename.new(
+          logger: logger,
+          discord: discord,
+          pagerduty: pagerduty,
+          max_renames: 10,
+        )
       ]
     end
   end
