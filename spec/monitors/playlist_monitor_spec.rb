@@ -24,6 +24,13 @@ RSpec.describe PlaylistMonitor do
     allow(monitor).to receive(:shutdown).and_call_original
   end
 
+  it "considers :stream_error a bad playlist" do
+    monitor.record(:normal)
+    monitor.record(:stream_error)
+    expect(monitor.errors.count).to eq(1)
+    expect(monitor.events.count).to eq(2)
+  end
+
   context "when many normal playlists are seen" do
     let(:count) { 3 }
     let(:separation) { 1.second }

@@ -39,6 +39,14 @@ RSpec.describe Playlist do
     m3u8
   end
 
+  let(:error_playlist) do
+    content = <<~m3u8
+      #EXTM3U
+      #EXT-X-ERROR: Stream open failed
+      #EXT-X-ENDLIST
+    m3u8
+  end
+
   describe "#size" do
     subject { playlist.size }
 
@@ -54,6 +62,11 @@ RSpec.describe Playlist do
 
     context "when empty" do
       let(:content) { empty_playlist }
+      it { is_expected.to eq(0) }
+    end
+
+    context "when error" do
+      let(:content) { error_playlist }
       it { is_expected.to eq(0) }
     end
   end
@@ -76,6 +89,11 @@ RSpec.describe Playlist do
       it { is_expected.to be_empty }
     end
 
+    context "when error" do
+      let(:content) { error_playlist }
+      it { is_expected.to be_empty }
+    end
+
     context "when source only" do
       let(:content) { source_only_playlist }
       it { is_expected.to be_empty }
@@ -87,6 +105,11 @@ RSpec.describe Playlist do
 
     context "when playlist is empty" do
       let(:content) { empty_playlist }
+      it { is_expected.to be_empty }
+    end
+
+    context "when playlist is error" do
+      let(:content) { error_playlist }
       it { is_expected.to be_empty }
     end
 
@@ -116,6 +139,11 @@ RSpec.describe Playlist do
       let(:b) { Playlist.new(full_playlist) }
       it { is_expected.to be false }
     end
+  end
+
+  describe "#error?" do
+    let(:content) { error_playlist }
+    it { is_expected.to be_error }
   end
 
 end

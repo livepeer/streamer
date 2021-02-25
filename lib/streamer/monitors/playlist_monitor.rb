@@ -4,32 +4,19 @@ require 'faraday'
 
 module Streamer
 
-  # This lifecycle decorator monitors the playlist returned on each "tick" and
-  # fires lifecycle events when it sees it change.
+  # This monitor tracks playlist samples and detects "bad" results. When
+  # an error condition is initially encountered it transitions to an alarm state.
+  # If this error condition persists for longer than the given threshold it will
+  # transition to an alerting state.
   #
-  # It currently will detect the following events:
-  #   - normal
-  #   - source_only, a playlist without renditions
-  #   - renamed,  a playlist with renditions at new urls
-  #   - null, an empty playlist
-  #   - connection_failed_error, couldn't fetch the playlist
-  #   - timeout_error, playlist request took too long
-  #   - client_error, catch all for any client http error
-  #   - server_error, catch all for any server http error
-  #
-  # In addition to recording these events this decorator also tracks "bad"
-  # events and raises an alerts as these events happen and eventually alarms
-  # if the bad condition persists for too long.
-  #
-  # Callers use the following hooks to respond to these conditions.
-  # for the callers to handle
+  # Callers use the following hooks to respond to these transitions.
   #
   # The following hooks are supported
   #   - sampled, fired after a playlist event is recorded
-  #   - alert_started, fired after a playlist event is recorded
-  #
-  # TODO: This should likely be broken into two classes. One to request
-  # playlists and surface events and another to monitor those events
+  #   - alarm_started
+  #   - alarm_stopped
+  #   - alert_started
+  #   - alert_stopped
   class PlaylistMonitor
     attr_reader :events
     attr_reader :errors
@@ -37,20 +24,20 @@ module Streamer
     attr_reader :last_alert_duration
     attr_reader :last_alert_start
     attr_reader :last_alert_end
-    attr_reader :stream
+    attr_reader :threshold
 
-    THRESHOLD = 3.minutes
     OK_EVENTS = [
       :normal,
       :rename,
     ]
 
-    def initialize
+    def initialize(threshold: 3.minutes)
       @events = []
       @errors = []
       @last_error_duration = nil
       @alarming = false
       @alert_started_at = nil
+      @threshold = threshold
 
       @callbacks = {
         alert_started: [],
@@ -61,40 +48,6 @@ module Streamer
         sampled: [],
         bad_playlist: [],
       }
-    end
-
-    def watch(stream)
-      @stream = stream
-    end
-
-    def sample!
-      sample = stream.fetch_playlist!
-
-      if sample.source_only?
-        record(:source_only)
-      elsif sample.nil?
-        record(:null)
-      else
-        if sample.renamed?(@last_normal_playlist)
-          record(:rename)
-        else
-          record(:normal)
-        end
-
-        @last_normal_playlist = sample
-      end
-    rescue Faraday::ConnectionFailed => e
-      record(:conection_failed_error)
-    rescue Faraday::TimeoutError => e
-      record(:timeout_error)
-    rescue Faraday::ClientError => e
-      record(:client_error)
-    rescue Faraday::ServerError => e
-      record(:server_error)
-    end
-
-    def threshold
-      THRESHOLD
     end
 
     def on(event, &block)

@@ -2,7 +2,6 @@ require 'spec_helper'
 
 require 'streamer/cycle'
 require 'streamer/decorators/discord_decorator'
-require 'streamer/decorators/page_on_unexpected_playlist'
 require 'streamer/decorators/monitor_playlist'
 
 module Streamer

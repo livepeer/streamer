@@ -3,6 +3,7 @@ module Streamer
     attr_reader :raw
 
     ARB_STACK_NAMES_PATTERN = /#EXT-X-STREAM[^\n]*\n(\S+)/m
+    ERROR_PATTERN = /#EXT-X-ERROR/m
     SOURCE_PATTERN = /^0_1/
 
     def initialize(raw)
@@ -16,6 +17,10 @@ module Streamer
 
     def source_only?
       size == 1
+    end
+
+    def error?
+      raw.scan(ERROR_PATTERN).count > 0
     end
 
     def size

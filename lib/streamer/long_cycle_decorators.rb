@@ -24,7 +24,7 @@ module Streamer
       analyzer:,
       pagerduty:
     )
-      playlist_monitor = PlaylistMonitor.new
+      playlist_monitor = PlaylistMonitor.new(threshold: 3.minutes)
 
       [
         Streamer::LoggerDecorator.new(logger),
