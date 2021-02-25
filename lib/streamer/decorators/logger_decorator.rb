@@ -25,6 +25,10 @@ module Streamer
         info("Created stream. id='#{c.stream.id}' key='#{c.stream.stream_key}' playback='#{c.stream.playback}'")
       end
 
+      c.before(:booted) do
+        info("Booting")
+      end
+
       c.after(:booted) do
         info("Booted")
       end
@@ -36,7 +40,7 @@ module Streamer
       c.after(:start_broadcast) do
         info("Executed #{c.broadcaster.command} #{c.broadcaster.args.join(" ")}")
         info("Watch: #{c.bitmovin_url}")
-        info("Waiting #{c.grace}s before considering the stream booted")
+        info("Waiting #{c.grace}s before booting monitors")
       end
 
       c.before(:shutdown) do
