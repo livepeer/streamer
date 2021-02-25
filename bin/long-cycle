@@ -37,6 +37,8 @@ pagerduty = Streamer::PagerDuty.new(
   component: ENV.fetch("PAGER_DUTY_COMPONENT"),
 )
 
+secondary_region = ENV.fetch("SECONDARY_REGIONS", "").split(" ").sample
+
 logger = Logger.new($stdout)
 session_name = SecureRandom.uuid
 profiles = [
@@ -87,6 +89,7 @@ begin
         analyzer: analyzer,
         discord: discord,
         pagerduty: pagerduty,
+        secondary_region: secondary_region,
       )
     )
     current_cycle.execute

@@ -34,11 +34,13 @@ module Streamer
       "rtmp://#{ingest_region}-rtmp.#{platform}/live/#{stream_key}"
     end
 
-    def playback_url
+    def playback_url(region=nil)
+      region ||= playback_region
+
       if playback_secret.present?
-        "https://#{playback_region}-playback-#{playback_secret}.#{platform}/hls/#{playback_id}/index.m3u8"
+        "https://#{region}-playback-#{playback_secret}.#{platform}/hls/#{playback_id}/index.m3u8"
       else
-        "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/index.m3u8"
+        "https://#{region}-cdn.#{platform}/hls/#{playback_id}/index.m3u8"
       end
     end
     alias :playback :playback_url

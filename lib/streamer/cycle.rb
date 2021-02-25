@@ -35,6 +35,7 @@ module Streamer
       :current_playlist_size,
       :expected_playlist_size,
       :renditions,
+      :playback_url,
       to: :stream
 
     def initialize(

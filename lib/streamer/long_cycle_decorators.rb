@@ -22,7 +22,8 @@ module Streamer
       logger:,
       discord:,
       analyzer:,
-      pagerduty:
+      pagerduty:,
+      secondary_region: nil
     )
       playlist_monitor = PlaylistMonitor.new(threshold: 3.minutes)
 
@@ -38,10 +39,11 @@ module Streamer
           logger: logger,
           pagerduty: pagerduty,
         ),
-        Streamer::MonitorSource.new(
+        Streamer::AnalyzeStream.new(
           analyzer: analyzer,
           logger: logger,
           discord: discord,
+          secondary_region: secondary_region,
         ),
         Streamer::MonitorRendition.new(
           analyzer: analyzer,
