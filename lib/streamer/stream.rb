@@ -51,8 +51,13 @@ module Streamer
 
     def renditions
       return [] if current_playlist.nil?
+
       current_playlist.renditions.map do |x|
-        "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/#{x}"
+        if playback_secret.present?
+          "https://#{playback_region}-playback-#{playback_secret}.#{platform}/hls/#{playback_id}/#{x}"
+        else
+          "https://#{playback_region}-cdn.#{platform}/hls/#{playback_id}/#{x}"
+        end
       end
     end
 
